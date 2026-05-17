@@ -96,21 +96,17 @@ export default function TestPage({ params }: TestPageProps) {
     }
   };
 
-  // Handle uploaded speaking voice chunk
-  const handleRecordingComplete = async (audioBlob: Blob, spokenText: string, recognitionSupported: boolean) => {
+  const handleRecordingComplete = async (audioBlob: Blob) => {
     setIsProcessing(true);
     setErrorMsg(null);
 
     try {
-      // 1. Send speech audio to AI speech assessment API
       const gradingFormData = new FormData();
       gradingFormData.append("audio", audioBlob, "speaking_voice.webm");
       gradingFormData.append("sentence", currentPrompt.sentence);
       gradingFormData.append("level", level);
-      gradingFormData.append("spokenText", spokenText || "");
-      gradingFormData.append("recognitionSupported", recognitionSupported ? "true" : "false");
 
-      console.log(`📤 Đang gửi file âm thanh kèm transcript "${spokenText}" lên hệ thống đánh giá...`);
+      console.log(`📤 Đang gửi file âm thanh lên hệ thống đánh giá...`);
       const gradingRes = await fetch("/api/assess-speech", {
         method: "POST",
         body: gradingFormData,
