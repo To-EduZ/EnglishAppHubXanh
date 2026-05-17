@@ -74,23 +74,51 @@ export default function ResultPage({ params }: ResultPageProps) {
     });
   };
 
-  // Speaks aloud individual words for kids pronunciation guidelines
+  // Speaks aloud individual words using natural Google TTS as primary, with native Web Speech as fallback
   const playWordTTS = (word: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const cleaned = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
-      const utterance = new SpeechSynthesisUtterance(cleaned);
-      utterance.lang = "en-US";
-      utterance.rate = 0.75; // Slow for kids comprehension
+    const cleaned = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
+    if (!cleaned) return;
+
+    try {
+      setTtsPlaying(true);
+      // Using our robust Next.js server proxy route to bypass all CORS and referer blocks
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleaned)}`;
       
-      utterance.onstart = () => setTtsPlaying(true);
-      utterance.onend = () => {
+      const audio = new Audio(ttsUrl);
+      audio.onended = () => {
         setTtsPlaying(false);
         setSelectedWord(cleaned);
       };
-      utterance.onerror = () => setTtsPlaying(false);
+      audio.onerror = (e) => {
+        console.warn("Lỗi phát Google Word TTS, chuyển sang Web Speech API:", e);
+        playNativeWordTTS(cleaned);
+      };
+      audio.play().catch((err) => {
+        console.warn("Autoplay bị chặn ở Word TTS, chuyển sang Web Speech API:", err);
+        playNativeWordTTS(cleaned);
+      });
+    } catch (e) {
+      console.warn("Lỗi khởi tạo Word Audio, chuyển sang Web Speech API:", e);
+      playNativeWordTTS(cleaned);
+    }
+  };
 
+  const playNativeWordTTS = (cleanedWord: string) => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(cleanedWord);
+      utterance.lang = "en-US";
+      utterance.rate = 0.75;
+      utterance.onstart = () => setTtsPlaying(true);
+      utterance.onend = () => {
+        setTtsPlaying(false);
+        setSelectedWord(cleanedWord);
+      };
+      utterance.onerror = () => setTtsPlaying(false);
       window.speechSynthesis.speak(utterance);
+    } else {
+      setTtsPlaying(false);
+      setSelectedWord(cleanedWord);
     }
   };
 

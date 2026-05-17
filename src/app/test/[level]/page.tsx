@@ -55,23 +55,44 @@ export default function TestPage({ params }: TestPageProps) {
 
   const currentPrompt = levelPrompts[level] || levelPrompts.Starters;
 
-  // Web Speech API Text-to-Speech (TTS) integration
+  // Play sound using natural-sounding Google Translate TTS as primary, with native Web Speech as fallback
   const playTTS = () => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      // Cancel previous TTS
-      window.speechSynthesis.cancel();
+    try {
+      setTtsPlaying(true);
+      const textToSpeak = currentPrompt.sentence;
+      // Using our robust Next.js server proxy route to bypass all CORS and referer blocks
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(textToSpeak)}`;
+      
+      const audio = new Audio(ttsUrl);
+      audio.onended = () => setTtsPlaying(false);
+      audio.onerror = (e) => {
+        console.warn("Lỗi phát Google TTS, chuyển sang Web Speech API:", e);
+        playNativeTTS();
+      };
+      
+      audio.play().catch((err) => {
+        console.warn("Autoplay bị chặn, chuyển sang Web Speech API:", err);
+        playNativeTTS();
+      });
+    } catch (e) {
+      console.warn("Lỗi tạo Audio, chuyển sang Web Speech API:", e);
+      playNativeTTS();
+    }
+  };
 
+  const playNativeTTS = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(currentPrompt.sentence);
       utterance.lang = "en-US";
-      utterance.rate = 0.85; // Slow down slightly for kids to mimic better
-
+      utterance.rate = 0.85;
       utterance.onstart = () => setTtsPlaying(true);
       utterance.onend = () => setTtsPlaying(false);
       utterance.onerror = () => setTtsPlaying(false);
-
       window.speechSynthesis.speak(utterance);
     } else {
-      alert("Trình duyệt của con chưa hỗ trợ nghe thử rồi. Con nhờ ba mẹ nâng cấp nhé! 🔊");
+      setTtsPlaying(false);
+      alert("Trình duyệt hoặc thiết bị của con chưa hỗ trợ nghe thử rồi! 🔊");
     }
   };
 
@@ -145,12 +166,19 @@ export default function TestPage({ params }: TestPageProps) {
       {/* Stats Navigation bar */}
       <header className="w-full bg-white border-b-4 border-slate-100 py-4 px-4 sticky top-0 z-30 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
+          {isProcessing ? (
+            <button disabled className="btn-3d-gray opacity-60 px-4 py-2.5 text-xs font-black flex items-center gap-1 cursor-not-allowed">
               <ArrowLeft className="w-4 h-4" />
               QUAY VỀ
             </button>
-          </Link>
+          ) : (
+            <Link href="/">
+              <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
+                <ArrowLeft className="w-4 h-4" />
+                QUAY VỀ
+              </button>
+            </Link>
+          )}
           
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-2xl">
             <span className="text-xl">{currentPrompt.animal}</span>
@@ -214,9 +242,10 @@ export default function TestPage({ params }: TestPageProps) {
             <div className="mt-4 flex justify-center">
               <button
                 onClick={playTTS}
-                disabled={ttsPlaying}
+                disabled={ttsPlaying || isProcessing}
                 className={`btn-3d-yellow px-5 py-2.5 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                  ttsPlaying ? "animate-pulse brightness-90 shadow-none translate-y-[4px]" : "hover:scale-105"
+                  ttsPlaying ? "animate-pulse brightness-90 shadow-none translate-y-[4px]" : 
+                  isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
                 }`}
               >
                 <Volume2 className={`w-4 h-4 ${ttsPlaying ? "animate-bounce" : ""}`} />
@@ -256,9 +285,36 @@ export default function TestPage({ params }: TestPageProps) {
       </main>
 
       {/* Decorative stars */}
-      <div className="text-center text-xs text-slate-400 font-bold z-10 px-4">
+      <div className="text-center text-xs text-slate-400 font-bold z-10 px-4 mb-4">
         🔒 Dữ liệu thu âm giọng nói của bé được mã hóa an toàn nhằm bảo mật riêng tư.
       </div>
+
+      {/* 🚀 Playful Fullscreen Loading Overlay for Kid-friendly AI Grading */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white rounded-3xl border-4 border-blue-400 p-8 shadow-2xl max-w-sm w-full relative overflow-hidden animate-bounce-subtle">
+            {/* Playful elements floating around inside loading box */}
+            <div className="absolute -top-3 -left-3 text-3xl animate-spin" style={{ animationDuration: "6s" }}>⭐</div>
+            <div className="absolute -bottom-3 -right-3 text-3xl animate-bounce">🎈</div>
+            
+            <div className="w-24 h-24 bg-blue-50 border-4 border-dashed border-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+              <span className="text-5xl animate-spin inline-block" style={{ animationDuration: "12s" }}>🚀</span>
+            </div>
+            
+            <h3 className="text-xl font-black text-blue-600 tracking-tight">
+              Đang chấm điểm phát âm...
+            </h3>
+            
+            <p className="text-sm font-extrabold text-slate-500 mt-3 leading-relaxed">
+              Cô giáo AI {currentPrompt.mascot} {currentPrompt.animal} đang lắng nghe thật kỹ giọng nói siêu đáng yêu của con để chấm điểm đấy! 🌟
+            </p>
+            
+            <div className="w-full bg-slate-100 rounded-full h-3.5 mt-6 p-0.5 border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-400 to-indigo-500 h-full rounded-full animate-pulse w-full" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
