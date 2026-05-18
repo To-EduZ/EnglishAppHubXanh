@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Award, Trophy, Star, Clock, ChevronRight, Volume2, Sparkles, BarChart3 } from "lucide-react";
+import { Award, Trophy, Star, Clock, ChevronRight, Volume2, Sparkles, BarChart3, Mic, Headphones, BookOpen, PenTool, X } from "lucide-react";
 
 interface AssessmentItem {
   _id: string;
   level: "Starters" | "Movers" | "Flyers";
+  skill?: "Speaking" | "Listening" | "Reading" | "Writing";
   sentence: string;
   score: number;
   stars: number;
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState<AssessmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalStars, setTotalStars] = useState(0);
+  const [activeModalLevel, setActiveModalLevel] = useState<string | null>(null);
 
   // Fetch recent speech tests history
   useEffect(() => {
@@ -229,12 +231,13 @@ export default function Dashboard() {
                   </div>
 
                   {/* Play Button */}
-                  <Link href={`/test/${lvl.id}`} className="w-full block">
-                    <button className={`${lvl.btnClass} w-full py-3.5 text-sm tracking-wider uppercase flex items-center justify-center gap-1`}>
-                      CHƠI NGAY
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </Link>
+                  <button
+                    onClick={() => setActiveModalLevel(lvl.id)}
+                    className={`${lvl.btnClass} w-full py-3.5 text-sm tracking-wider uppercase flex items-center justify-center gap-1`}
+                  >
+                    CHƠI NGAY
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -289,9 +292,23 @@ export default function Dashboard() {
                       </div>
                       
                       <div>
-                        <p className="text-sm font-extrabold text-slate-700 group-hover:text-emerald-600 transition-colors line-clamp-1">
-                          "{item.sentence}"
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-extrabold text-slate-700 group-hover:text-emerald-600 transition-colors line-clamp-1">
+                            "{item.sentence}"
+                          </p>
+                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 text-[9px] font-black uppercase rounded-md border ${
+                            item.skill === "Listening" ? "bg-blue-50 border-blue-200 text-blue-600" :
+                            item.skill === "Reading" ? "bg-emerald-50 border-emerald-200 text-emerald-600" :
+                            item.skill === "Writing" ? "bg-amber-50 border-amber-200 text-amber-600" :
+                            "bg-pink-50 border-pink-200 text-pink-600"
+                          }`}>
+                            {item.skill === "Listening" ? <Headphones className="w-2.5 h-2.5" /> :
+                             item.skill === "Reading" ? <BookOpen className="w-2.5 h-2.5" /> :
+                             item.skill === "Writing" ? <PenTool className="w-2.5 h-2.5" /> :
+                             <Mic className="w-2.5 h-2.5" />}
+                            {item.skill || "Speaking"}
+                          </span>
+                        </div>
                         <p className="text-[11px] font-bold text-slate-400 mt-0.5">
                           Ngày làm: {new Date(item.createdAt).toLocaleDateString("vi-VN", {
                             day: "2-digit",
@@ -338,6 +355,95 @@ export default function Dashboard() {
         </section>
 
       </main>
+
+      {/* 🚀 Playful Kid-Friendly Skill Selector Modal */}
+      {activeModalLevel && (() => {
+        const lvlObj = levels.find(l => l.id === activeModalLevel);
+        if (!lvlObj) return null;
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl border-4 border-slate-200 shadow-2xl max-w-lg w-full relative overflow-hidden animate-bounce-subtle p-6 md:p-8">
+              
+              {/* Close Button */}
+              <button 
+                onClick={() => setActiveModalLevel(null)}
+                className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full p-2 border border-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Character Mascot Header */}
+              <div className="flex items-center gap-4 mb-6 border-b-2 border-slate-100 pb-4">
+                <div className="w-16 h-16 rounded-2xl bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-4xl shadow-sm shrink-0 animate-bounce">
+                  {lvlObj.character}
+                </div>
+                <div>
+                  <span className="bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
+                    Cấp độ {lvlObj.title}
+                  </span>
+                  <h3 className="text-xl font-black text-slate-800 leading-tight">
+                    Mascot {lvlObj.charName} chào con!
+                  </h3>
+                </div>
+              </div>
+
+              <p className="text-slate-600 font-extrabold text-sm text-center mb-6 leading-relaxed bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                🌟 "Bé muốn thử thách kỹ năng tiếng Anh nào cùng cô giáo AI hôm nay?"
+              </p>
+
+              {/* Grid of 4 Skills */}
+              <div className="grid grid-cols-2 gap-4">
+                
+                {/* 1. Speaking (Nói) */}
+                <Link href={`/test/${lvlObj.id}?skill=speaking`} onClick={() => setActiveModalLevel(null)}>
+                  <div className="bg-pink-50 hover:bg-pink-100 border-2 border-pink-200 hover:border-pink-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 hover:-translate-y-1 shadow-sm group">
+                    <span className="w-12 h-12 bg-white rounded-xl border border-pink-100 flex items-center justify-center text-pink-500 shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                      <Mic className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-black text-pink-700 uppercase tracking-wide block">Luyện Nói</span>
+                    <span className="text-[10px] font-bold text-pink-400 mt-0.5 block">Speaking Game</span>
+                  </div>
+                </Link>
+
+                {/* 2. Listening (Nghe) */}
+                <Link href={`/test/${lvlObj.id}?skill=listening`} onClick={() => setActiveModalLevel(null)}>
+                  <div className="bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 hover:border-blue-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 hover:-translate-y-1 shadow-sm group">
+                    <span className="w-12 h-12 bg-white rounded-xl border border-blue-100 flex items-center justify-center text-blue-500 shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                      <Headphones className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-black text-blue-700 uppercase tracking-wide block">Luyện Nghe</span>
+                    <span className="text-[10px] font-bold text-blue-400 mt-0.5 block">Listening Game</span>
+                  </div>
+                </Link>
+
+                {/* 3. Reading (Đọc) */}
+                <Link href={`/test/${lvlObj.id}?skill=reading`} onClick={() => setActiveModalLevel(null)}>
+                  <div className="bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 hover:border-emerald-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 hover:-translate-y-1 shadow-sm group">
+                    <span className="w-12 h-12 bg-white rounded-xl border border-emerald-100 flex items-center justify-center text-emerald-500 shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-black text-emerald-700 uppercase tracking-wide block">Luyện Đọc</span>
+                    <span className="text-[10px] font-bold text-emerald-400 mt-0.5 block">Reading Game</span>
+                  </div>
+                </Link>
+
+                {/* 4. Writing (Viết) */}
+                <Link href={`/test/${lvlObj.id}?skill=writing`} onClick={() => setActiveModalLevel(null)}>
+                  <div className="bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 hover:border-amber-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 hover:-translate-y-1 shadow-sm group">
+                    <span className="w-12 h-12 bg-white rounded-xl border border-amber-100 flex items-center justify-center text-amber-500 shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                      <PenTool className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-black text-amber-700 uppercase tracking-wide block">Luyện Viết</span>
+                    <span className="text-[10px] font-bold text-amber-400 mt-0.5 block">Writing Game</span>
+                  </div>
+                </Link>
+
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

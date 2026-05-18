@@ -13,7 +13,7 @@ const mistral = new OpenAI({
   baseURL: "https://api.mistral.ai/v1",
 });
 
-const inMemoryAssessments: any[] = [];
+import { inMemoryAssessments } from "@/lib/dbStore";
 const DEFAULT_USER_ID = "kid_primary_std_01";
 
 async function generateAIFeedback(
