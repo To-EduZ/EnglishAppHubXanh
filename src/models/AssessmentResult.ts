@@ -3,9 +3,13 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IAssessmentResult extends Document {
   userId: string;
   level: "Starters" | "Movers" | "Flyers";
+  skill: "Speaking" | "Listening" | "Reading" | "Writing";
   sentence: string;
   spokenText: string;
   recordedAudioUrl: string;
+  targetAnswer?: string;
+  userAnswer?: string;
+  corrections?: string;
   score: number;
   stars: number;
   mispronouncedWords: string[];
@@ -25,9 +29,18 @@ const AssessmentResultSchema: Schema<IAssessmentResult> = new Schema(
       enum: ["Starters", "Movers", "Flyers"],
       required: true,
     },
+    skill: {
+      type: String,
+      enum: ["Speaking", "Listening", "Reading", "Writing"],
+      default: "Speaking",
+      required: true,
+    },
     sentence: { type: String, required: true },
     spokenText: { type: String, default: "" },
     recordedAudioUrl: { type: String, default: "" },
+    targetAnswer: { type: String, default: "" },
+    userAnswer: { type: String, default: "" },
+    corrections: { type: String, default: "" },
     score: { type: Number, required: true, min: 0, max: 100 },
     stars: { type: Number, required: true, min: 1, max: 5 },
     mispronouncedWords: { type: [String], default: [] },

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import AssessmentResult from "@/models/AssessmentResult";
-
-// In-memory array acting as an automatic mock database if MongoDB local is offline
-const inMemoryAssessments: any[] = [];
+import { inMemoryAssessments } from "@/lib/dbStore";
 
 // Seed a mock user ID for kid assessment testing
 const DEFAULT_USER_ID = "kid_primary_std_01";
@@ -13,6 +11,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       level,
+      skill,
       sentence,
       spokenText,
       score,
@@ -21,6 +20,9 @@ export async function POST(req: NextRequest) {
       feedback,
       roadmap,
       recordedAudioUrl,
+      targetAnswer,
+      userAnswer,
+      corrections,
     } = body;
 
     // Validate request data
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
     const assessmentData = {
       userId: body.userId || DEFAULT_USER_ID,
       level,
+      skill: skill || "Speaking",
       sentence,
       spokenText: spokenText || "",
       score,
@@ -44,6 +47,9 @@ export async function POST(req: NextRequest) {
       feedback,
       roadmap: roadmap || [],
       recordedAudioUrl: recordedAudioUrl || "",
+      targetAnswer: targetAnswer || "",
+      userAnswer: userAnswer || "",
+      corrections: corrections || "",
       createdAt: new Date(),
     };
 

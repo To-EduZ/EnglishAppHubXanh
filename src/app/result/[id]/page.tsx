@@ -3,14 +3,19 @@
 import React, { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, ArrowLeft, CheckSquare, Square, Share2, Award, Sparkles, Volume2, MessageSquare, Compass, RefreshCw, Home } from "lucide-react";
+import { Star, ArrowLeft, CheckSquare, Square, Share2, Award, Sparkles, Volume2, MessageSquare, Compass, RefreshCw, Home, Headphones, BookOpen, PenTool, CheckCircle, AlertTriangle } from "lucide-react";
 
 interface AssessmentResultData {
   _id: string;
   userId: string;
   level: "Starters" | "Movers" | "Flyers";
+  skill?: "Speaking" | "Listening" | "Reading" | "Writing";
   sentence: string;
   spokenText: string;
+  recordedAudioUrl?: string;
+  targetAnswer?: string;
+  userAnswer?: string;
+  corrections?: string;
   score: number;
   stars: number;
   mispronouncedWords: string[];
@@ -35,23 +40,22 @@ export default function ResultPage({ params }: ResultPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Roadmap local checklist state for kid interaction
+  // Roadmap checklist local state for kid interaction
   const [checkedRoadmap, setCheckedRoadmap] = useState<boolean[]>([false, false, false]);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState(false);
 
-  // Fetch results from DB api
+  // Fetch results from API
   useEffect(() => {
     async function fetchResult() {
       try {
         const res = await fetch(`/api/assessments?id=${resultId}`);
         if (!res.ok) {
-          throw new Error("Không thể tải thông tin kết quả thi nói!");
+          throw new Error("Không thể tải thông tin kết quả bài luyện tập!");
         }
         const json = await res.json();
         if (json.success && json.data) {
           setData(json.data);
-          // Pre-populate unchecked checkboxes
           setCheckedRoadmap([false, false, false]);
         } else {
           throw new Error(json.error || "Không tìm thấy dữ liệu!");
@@ -66,7 +70,6 @@ export default function ResultPage({ params }: ResultPageProps) {
     fetchResult();
   }, [resultId]);
 
-  // Handle roadmap checkbox clicks
   const toggleRoadmapItem = (index: number) => {
     setCheckedRoadmap((prev) => {
       const next = [...prev];
@@ -82,9 +85,7 @@ export default function ResultPage({ params }: ResultPageProps) {
 
     try {
       setTtsPlaying(true);
-      // Using our robust Next.js server proxy route to bypass all CORS and referer blocks
       const ttsUrl = `/api/tts?text=${encodeURIComponent(cleaned)}`;
-      
       const audio = new Audio(ttsUrl);
       audio.onended = () => {
         setTtsPlaying(false);
@@ -123,7 +124,6 @@ export default function ResultPage({ params }: ResultPageProps) {
     }
   };
 
-  // Render loading screen
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-pastel-bg flex flex-col items-center justify-center p-6 text-center">
@@ -141,14 +141,13 @@ export default function ResultPage({ params }: ResultPageProps) {
     );
   }
 
-  // Render error screen
   if (error || !data) {
     return (
       <div className="w-full min-h-screen bg-pastel-bg flex flex-col items-center justify-center p-6 text-center">
         <span className="text-6xl mb-4 animate-bounce">😢</span>
         <h2 className="text-2xl font-black text-rose-500">Úp! Có lỗi xảy ra rồi...</h2>
         <p className="text-sm text-slate-500 max-w-sm mt-2">
-          Không tìm thấy bài chấm điểm này. Con hãy quay về trang chủ để chọn lại bài nói nhé!
+          Không tìm thấy bài chấm điểm này. Con hãy quay về trang chủ để chọn lại bài luyện tập nhé!
         </p>
         <Link href="/" className="mt-6">
           <button className="btn-3d-gray px-6 py-3 uppercase tracking-wider font-black">
@@ -159,7 +158,10 @@ export default function ResultPage({ params }: ResultPageProps) {
     );
   }
 
-  // Calculate badge level based on score/stars
+  const skill = data.skill || "Speaking";
+  const isCorrectChoice = data.score === 100;
+
+  // Layout details
   const medalMascot = data.stars === 5 ? "👑 KIM CƯƠNG" : data.stars === 4 ? "🥇 VÀNG" : data.stars === 3 ? "🥈 BẠC" : "🥉 ĐỒNG";
   const medalColor = 
     data.stars === 5 ? "bg-cyan-50 border-cyan-300 text-cyan-700" :
@@ -170,17 +172,14 @@ export default function ResultPage({ params }: ResultPageProps) {
   const levelMascotAnimal = data.level === "Starters" ? "🦛" : data.level === "Movers" ? "🐒" : "🦁";
   const levelMascotName = data.level === "Starters" ? "Hippo Dễ Thương" : data.level === "Movers" ? "Monkey Thông Minh" : "Lion Dũng Cảm";
 
-  // Function to split sentence into words and identify correct vs incorrect ones
+  // Speaking word-by-word renderer
   const renderSentenceFeedback = () => {
-    // Replace double spaces and trim
     const sentence = data.sentence;
-    // Split by spaces while keeping punctuation attached
     const words = sentence.split(/\s+/).filter(Boolean);
 
     return (
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4 py-6 border-y-2 border-slate-100 px-2 my-2 select-none">
         {words.map((word, index) => {
-          // Remove punctuation to compare with database mispronouncedWords
           const cleanedWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").toLowerCase();
           const isWrong = data.mispronouncedWords.includes(cleanedWord);
 
@@ -190,7 +189,7 @@ export default function ResultPage({ params }: ResultPageProps) {
                 key={index}
                 onClick={() => playWordTTS(word)}
                 className="relative cursor-pointer text-2xl md:text-3xl font-black text-rose-500 bg-rose-50 border-2 border-rose-300 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group underline decoration-wavy decoration-rose-400 decoration-3 underline-offset-4"
-                title="Nhấn để nghe phát âm mẫu của từ này 🔊"
+                title="Nhấn để nghe phát âm mẫu 🔊"
               >
                 {word}
                 <span className="absolute -top-3.5 -right-2 bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shadow-sm border border-white scale-75 group-hover:scale-90 transition-transform">
@@ -205,7 +204,7 @@ export default function ResultPage({ params }: ResultPageProps) {
               key={index}
               onClick={() => playWordTTS(word)}
               className="relative cursor-pointer text-2xl md:text-3xl font-black text-emerald-600 bg-emerald-50 border-2 border-emerald-300 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group"
-              title="Phát âm tuyệt vời! Nhấn để nghe lại 🔊"
+              title="Phát âm tốt! Nhấn để nghe lại 🔊"
             >
               {word}
               <span className="absolute -top-3.5 -right-2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shadow-sm border border-white scale-75 group-hover:scale-90 transition-transform opacity-0 group-hover:opacity-100">
@@ -239,8 +238,15 @@ export default function ResultPage({ params }: ResultPageProps) {
           </Link>
           
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-2xl">
-            <span className="text-xl">🏆</span>
-            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">KẾT QUẢ BÀI LUYỆN NÓI</span>
+            <span className="text-xl">
+              {skill === "Speaking" && "🎤"}
+              {skill === "Listening" && "🎧"}
+              {skill === "Reading" && "📖"}
+              {skill === "Writing" && "✍️"}
+            </span>
+            <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
+              KẾT QUẢ LUYỆN {skill === "Speaking" ? "NÓI" : skill === "Listening" ? "NGHE" : skill === "Reading" ? "ĐỌC" : "VIẾT"}
+            </span>
           </div>
 
           <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center border-2 border-emerald-300">
@@ -292,7 +298,9 @@ export default function ResultPage({ params }: ResultPageProps) {
             
             {/* Score point badge */}
             <div className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 shadow-inner">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">ĐIỂM PHÁT ÂM</span>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+                {skill === "Writing" ? "ĐIỂM TẬP VIẾT" : skill === "Speaking" ? "ĐIỂM PHÁT ÂM" : "ĐIỂM TRẮC NGHIỆM"}
+              </span>
               <span className="text-4xl font-black text-emerald-500 font-mono block mt-1">
                 {data.score} <span className="text-base text-slate-400 font-sans">/ 100</span>
               </span>
@@ -311,40 +319,153 @@ export default function ResultPage({ params }: ResultPageProps) {
 
         </section>
 
-        {/* 2. Visual highlighting word-by-word feedback */}
-        <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
-          <div className="mb-4 text-center sm:text-left">
-            <h3 className="text-lg font-black text-slate-800 flex items-center justify-center sm:justify-start gap-2">
-              <MessageSquare className="w-5 h-5 text-emerald-500 animate-pulse" />
-              Chi tiết câu đọc của con:
-            </h3>
-            <p className="text-xs text-slate-500 font-bold mt-1">
-              Từ phát âm tốt tô màu <span className="text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">XANH LÁ</span>. Từ phát âm chưa đúng tô màu <span className="text-rose-600 font-extrabold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">ĐỎ</span>. Nhấn vào từng từ để nghe lại giọng đọc chuẩn nhé bé yêu!
-            </p>
-          </div>
+        {/* 2. Visual Skill Specific details */}
 
-          {renderSentenceFeedback()}
+        {/* A. SPEAKING FEEDBACK DETAIL */}
+        {skill === "Speaking" && (
+          <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
+            <div className="mb-4 text-center sm:text-left">
+              <h3 className="text-lg font-black text-slate-800 flex items-center justify-center sm:justify-start gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-500 animate-pulse" />
+                Chi tiết câu đọc của con:
+              </h3>
+              <p className="text-xs text-slate-500 font-bold mt-1">
+                Từ phát âm tốt tô màu <span className="text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">XANH LÁ</span>. Từ phát âm chưa đúng tô màu <span className="text-rose-600 font-extrabold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">ĐỎ</span>. Nhấn vào từng từ để nghe lại giọng đọc chuẩn nhé bé yêu!
+              </p>
+            </div>
 
-          {/* Interactive instruction details card for selected word */}
-          {selectedWord ? (
-            <div className="mt-6 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs font-bold text-slate-600 flex items-center justify-between gap-3 shadow-inner animate-bounce-subtle">
-              <div className="flex items-center gap-2">
-                <Volume2 className="w-5 h-5 text-blue-500 shrink-0" />
-                <span>Bé vừa nghe từ: <strong className="text-blue-600 text-sm uppercase">"{selectedWord}"</strong>. Hãy tập bật âm của từ này nhé!</span>
+            {renderSentenceFeedback()}
+
+            {selectedWord ? (
+              <div className="mt-6 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs font-bold text-slate-600 flex items-center justify-between gap-3 shadow-inner animate-bounce-subtle">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="w-5 h-5 text-blue-500 shrink-0" />
+                  <span>Bé vừa nghe từ: <strong className="text-blue-600 text-sm uppercase">"{selectedWord}"</strong>. Hãy tập bật âm của từ này nhé!</span>
+                </div>
+                <button 
+                  onClick={() => setSelectedWord(null)}
+                  className="text-[10px] bg-slate-200 border border-slate-300 text-slate-500 hover:bg-slate-300 hover:text-slate-700 rounded-lg px-2.5 py-1 font-black transition-colors"
+                >
+                  ĐÓNG ❌
+                </button>
               </div>
-              <button 
-                onClick={() => setSelectedWord(null)}
-                className="text-[10px] bg-slate-200 border border-slate-300 text-slate-500 hover:bg-slate-300 hover:text-slate-700 rounded-lg px-2.5 py-1 font-black transition-colors"
-              >
-                ĐÓNG ❌
-              </button>
+            ) : (
+              <div className="mt-4 text-center text-[10px] font-black text-slate-400 bg-slate-50/50 rounded-xl py-2 border border-slate-200/30">
+                💡 BÉ CÓ BIẾT: Nhấn trực tiếp vào bất kỳ từ nào ở trên để học cách phát âm chuẩn nhé!
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* B. LISTENING & READING FEEDBACK DETAIL */}
+        {(skill === "Listening" || skill === "Reading") && (
+          <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
+            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+              <CheckSquare className="w-5 h-5 text-blue-500" />
+              Chi tiết câu trả lời trắc nghiệm:
+            </h3>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-1">
+                {skill === "Listening" ? "Câu tiếng Anh cô giáo đã đọc:" : "Đoạn văn bé đã đọc:"}
+              </span>
+              <p className="text-base font-extrabold text-slate-700">
+                "{data.sentence}"
+              </p>
             </div>
-          ) : (
-            <div className="mt-4 text-center text-[10px] font-black text-slate-400 bg-slate-50/50 rounded-xl py-2 border border-slate-200/30">
-              💡 BÉ CÓ BIẾT: Nhấn trực tiếp vào bất kỳ từ nào ở trên để học cách phát âm chuẩn nhé!
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Correct answer card */}
+              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex items-start gap-3">
+                <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-xs font-black text-emerald-600 block">ĐÁP ÁN CHUẨN XÁC</span>
+                  <p className="text-sm font-extrabold text-slate-700 mt-1">{data.targetAnswer}</p>
+                </div>
+              </div>
+
+              {/* User selected card */}
+              <div className={`border-2 rounded-2xl p-4 flex items-start gap-3 ${
+                isCorrectChoice 
+                  ? "bg-emerald-50 border-emerald-300" 
+                  : "bg-rose-50 border-rose-300"
+              }`}>
+                {isCorrectChoice ? (
+                  <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <span className={`text-xs font-black block ${
+                    isCorrectChoice ? "text-emerald-600" : "text-rose-600"
+                  }`}>
+                    ĐÁP ÁN BÉ ĐÃ CHỌN
+                  </span>
+                  <p className="text-sm font-extrabold text-slate-700 mt-1">{data.userAnswer}</p>
+                </div>
+              </div>
+
             </div>
-          )}
-        </section>
+
+            <div className="mt-6 text-center">
+              <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-xs border uppercase shadow-sm ${
+                isCorrectChoice 
+                  ? "bg-emerald-100 border-emerald-300 text-emerald-700" 
+                  : "bg-rose-100 border-rose-300 text-rose-700"
+              }`}>
+                {isCorrectChoice ? "🎉 Bé chọn đúng hoàn hảo!" : "😢 Bé chọn chưa chính xác rồi, cùng xem cô sửa nhé!"}
+              </span>
+            </div>
+
+          </section>
+        )}
+
+        {/* C. WRITING FEEDBACK DETAIL */}
+        {skill === "Writing" && (
+          <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
+            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+              <PenTool className="w-5 h-5 text-amber-500" />
+              Chi tiết câu tập viết của con:
+            </h3>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-1">
+                Gợi ý / Tranh đề bài:
+              </span>
+              <p className="text-sm font-extrabold text-slate-600">
+                "{data.sentence}"
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              
+              {/* Kid's writing card */}
+              <div className="bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-4 relative overflow-hidden">
+                <span className="absolute right-3 top-3 text-2xl">✍️</span>
+                <span className="text-xs font-black text-amber-700 block">CÂU CON VIẾT THỰC TẾ:</span>
+                <p className="text-lg font-extrabold text-slate-700 mt-1 select-all">
+                  "{data.userAnswer}"
+                </p>
+              </div>
+
+              {/* AI corrections card */}
+              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 relative overflow-hidden">
+                <span className="absolute right-3 top-3 text-2xl">👩‍🏫</span>
+                <span className="text-xs font-black text-emerald-600 block">CÂU SỬA CHUẨN CỦA CÔ GIÁO AI:</span>
+                <p className="text-lg font-extrabold text-emerald-700 mt-1 select-all font-sans">
+                  "{data.corrections}"
+                </p>
+              </div>
+
+            </div>
+
+            <div className="mt-6 text-center text-[10px] font-black text-slate-400 bg-slate-50 rounded-xl py-2 border border-slate-200">
+              💡 BÉ CÓ BIẾT: Hãy so sánh nốt chữ của câu bé viết và câu sửa của cô để nhớ bài học lâu hơn nhé!
+            </div>
+
+          </section>
+        )}
 
         {/* 3. AI Tutor Empathetic feedback bubble */}
         <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl relative overflow-hidden">
@@ -361,7 +482,7 @@ export default function ResultPage({ params }: ResultPageProps) {
             </div>
 
             {/* Bubble comment text column */}
-            <div className="flex-1">
+            <div className="flex-1 w-full">
               
               {/* Encouragement text */}
               <div className="relative bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-5 shadow-sm">
@@ -382,9 +503,11 @@ export default function ResultPage({ params }: ResultPageProps) {
               {data.feedback.tips && (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-start gap-2 shadow-sm text-xs font-bold text-yellow-800">
                   <span className="text-base leading-none -mt-0.5">💡</span>
-                  <div>
-                    <span className="font-extrabold">Mẹo phát âm cho con: </span>
-                    <span className="font-medium text-slate-600 leading-relaxed font-sans">{data.feedback.tips}</span>
+                  <div className="w-full">
+                    <span className="font-extrabold">
+                      {skill === "Writing" ? "Mẹo ngữ pháp & lỗi sửa:" : "Lời giảng giải đáp án:"} 
+                    </span>
+                    <p className="font-medium text-slate-600 leading-relaxed font-sans mt-0.5">{data.feedback.tips}</p>
                   </div>
                 </div>
               )}
@@ -459,7 +582,7 @@ export default function ResultPage({ params }: ResultPageProps) {
         {/* 5. Navigation and actionable controls */}
         <section className="flex flex-col sm:flex-row items-center justify-center gap-4 z-20 relative">
           
-          <Link href={`/test/${data.level}`} className="w-full sm:w-auto">
+          <Link href={`/test/${data.level}?skill=${skill.toLowerCase()}`} className="w-full sm:w-auto">
             <button className="btn-3d-green w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105">
               <RefreshCw className="w-4 h-4" />
               THỬ THÁCH LẠI 🔄
@@ -477,12 +600,12 @@ export default function ResultPage({ params }: ResultPageProps) {
             onClick={() => {
               if (navigator.share) {
                 navigator.share({
-                  title: "Thành tích luyện nói Tiếng Anh của bé Tâm Anh",
-                  text: `Bé Tâm Anh vừa đạt được ${data.stars} sao vàng (${data.score}/100 điểm) chuẩn Cambridge ${data.level} ở ứng dụng KidSpeak!`,
+                  title: `Thành tích luyện ${skill} Tiếng Anh của bé Tâm Anh`,
+                  text: `Bé Tâm Anh vừa đạt được ${data.stars} sao vàng (${data.score}/100 điểm) chuẩn Cambridge ${data.level} kỹ năng ${skill} ở ứng dụng KidSpeak!`,
                   url: window.location.href,
                 }).catch(console.error);
               } else {
-                alert(`Đã sao chép liên kết thành tích bài thi nói của bé vào bộ nhớ tạm! Ba mẹ hãy chia sẻ nhé! 🎉\n${window.location.href}`);
+                alert(`Đã sao chép liên kết thành tích bài luyện tập của bé vào bộ nhớ tạm! Ba mẹ hãy chia sẻ nhé! 🎉\n${window.location.href}`);
                 navigator.clipboard.writeText(window.location.href);
               }
             }}
