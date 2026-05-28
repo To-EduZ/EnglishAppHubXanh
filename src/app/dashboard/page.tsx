@@ -81,11 +81,18 @@ export default function DashboardPage() {
             ? "Không thể tải dữ liệu. Bé hãy thử lại sau nhé!"
             : "Con hãy bắt đầu luyện các kỹ năng tiếng Anh để xem tiến độ của mình tại đây nhé!"}
         </p>
-        <Link href="/" className="mt-6">
-          <button className="btn-3d-green px-8 py-3 uppercase tracking-wider font-black text-sm">
-            BẮT ĐẦU LUYỆN TẬP 🚀
-          </button>
-        </Link>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href="/">
+            <button className="btn-3d-green px-8 py-3 uppercase tracking-wider font-black text-sm">
+              BẮT ĐẦU LUYỆN TẬP 🚀
+            </button>
+          </Link>
+          <Link href="/interactive-test">
+            <button className="btn-3d-pink px-8 py-3 uppercase tracking-wider font-black text-sm">
+              THI TƯƠNG TÁC AI 🤖
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -426,10 +433,15 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <div className="text-center mt-4">
+        <div className="text-center mt-4 flex justify-center gap-4">
           <Link href="/">
             <button className="btn-3d-green px-8 py-4 text-sm tracking-wider uppercase">
               LUYỆN THÊM BÀI MỚI 🚀
+            </button>
+          </Link>
+          <Link href="/interactive-test">
+            <button className="btn-3d-pink px-8 py-4 text-sm tracking-wider uppercase">
+              THI TƯƠNG TÁC AI 🤖
             </button>
           </Link>
         </div>
