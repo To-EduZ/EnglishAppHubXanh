@@ -45,6 +45,32 @@ export default function ResultPage({ params }: ResultPageProps) {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState(false);
 
+  const voices = [
+    { code: "en-US-AriaNeural", name: "Mỹ (Nữ) 🇺🇸" },
+    { code: "en-US-GuyNeural", name: "Mỹ (Nam) 🇺🇸" },
+    { code: "en-GB-SoniaNeural", name: "Anh (Nữ) 🇬🇧" },
+    { code: "en-GB-RyanNeural", name: "Anh (Nam) 🇬🇧" },
+    { code: "en-AU-NatashaNeural", name: "Úc (Nữ) 🇦🇺" },
+  ];
+
+  const [selectedVoice, setSelectedVoice] = useState<string>("en-US-AriaNeural");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("preferred_accent_voice");
+      if (saved) {
+        setSelectedVoice(saved);
+      }
+    }
+  }, []);
+
+  const handleVoiceChange = (voiceCode: string) => {
+    setSelectedVoice(voiceCode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("preferred_accent_voice", voiceCode);
+    }
+  };
+
   // Fetch results from API
   useEffect(() => {
     async function fetchResult() {
@@ -78,21 +104,21 @@ export default function ResultPage({ params }: ResultPageProps) {
     });
   };
 
-  // Speaks aloud individual words using natural Google TTS as primary, with native Web Speech as fallback
+  // Speaks aloud individual words using natural Edge TTS as primary, with native Web Speech as fallback
   const playWordTTS = (word: string) => {
     const cleaned = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
     if (!cleaned) return;
 
     try {
       setTtsPlaying(true);
-      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleaned)}`;
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleaned)}&voice=${selectedVoice}`;
       const audio = new Audio(ttsUrl);
       audio.onended = () => {
         setTtsPlaying(false);
         setSelectedWord(cleaned);
       };
       audio.onerror = (e) => {
-        console.warn("Lỗi phát Google Word TTS, chuyển sang Web Speech API:", e);
+        console.warn("Lỗi phát Edge Word TTS, chuyển sang Web Speech API:", e);
         playNativeWordTTS(cleaned);
       };
       audio.play().catch((err) => {
@@ -109,7 +135,8 @@ export default function ResultPage({ params }: ResultPageProps) {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(cleanedWord);
-      utterance.lang = "en-US";
+      const voiceLang = selectedVoice.startsWith("en-GB") ? "en-GB" : selectedVoice.startsWith("en-AU") ? "en-AU" : "en-US";
+      utterance.lang = voiceLang;
       utterance.rate = 0.75;
       utterance.onstart = () => setTtsPlaying(true);
       utterance.onend = () => {
@@ -329,7 +356,34 @@ export default function ResultPage({ params }: ResultPageProps) {
                 <MessageSquare className="w-5 h-5 text-emerald-500 animate-pulse" />
                 Chi tiết câu đọc của con:
               </h3>
-              <p className="text-xs text-slate-500 font-bold mt-1">
+              
+              {/* Voice Accent Selector */}
+              <div className="mt-3 mb-2 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-2.5 inline-block text-left w-full sm:w-auto">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5 text-center sm:text-left">
+                  Chọn accent của cô giáo AI:
+                </span>
+                <div className="flex flex-wrap justify-center sm:justify-start gap-1.5">
+                  {voices.map((v) => {
+                    const isSelected = selectedVoice === v.code;
+                    return (
+                      <button
+                        key={v.code}
+                        onClick={() => handleVoiceChange(v.code)}
+                        disabled={ttsPlaying}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-emerald-50 border-emerald-400 text-emerald-600 font-extrabold scale-105"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        }`}
+                      >
+                        {v.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 font-bold mt-2">
                 Từ phát âm tốt tô màu <span className="text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">XANH LÁ</span>. Từ phát âm chưa đúng tô màu <span className="text-rose-600 font-extrabold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">ĐỎ</span>. Nhấn vào từng từ để nghe lại giọng đọc chuẩn nhé bé yêu!
               </p>
             </div>

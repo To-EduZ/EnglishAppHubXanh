@@ -48,6 +48,32 @@ function TestPageContent({ rawLevel }: { rawLevel: string }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState(false);
 
+  const voices = [
+    { code: "en-US-AriaNeural", name: "Mỹ (Nữ) 🇺🇸" },
+    { code: "en-US-GuyNeural", name: "Mỹ (Nam) 🇺🇸" },
+    { code: "en-GB-SoniaNeural", name: "Anh (Nữ) 🇬🇧" },
+    { code: "en-GB-RyanNeural", name: "Anh (Nam) 🇬🇧" },
+    { code: "en-AU-NatashaNeural", name: "Úc (Nữ) 🇦🇺" },
+  ];
+
+  const [selectedVoice, setSelectedVoice] = useState<string>("en-US-AriaNeural");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("preferred_accent_voice");
+      if (saved) {
+        setSelectedVoice(saved);
+      }
+    }
+  }, []);
+
+  const handleVoiceChange = (voiceCode: string) => {
+    setSelectedVoice(voiceCode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("preferred_accent_voice", voiceCode);
+    }
+  };
+
   // Skill states
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [userWriting, setUserWriting] = useState("");
@@ -81,18 +107,18 @@ function TestPageContent({ rawLevel }: { rawLevel: string }) {
 
   const currentDetails = levelDetails[level] || levelDetails.Starters;
 
-  // Play model sound using Google TTS proxy
+  // Play model sound using Edge TTS proxy
   const playTTS = () => {
     try {
       setTtsPlaying(true);
       const textToSpeak = skill === "listening" ? question.audioText : question.prompt;
       if (!textToSpeak) return;
 
-      const ttsUrl = `/api/tts?text=${encodeURIComponent(textToSpeak)}`;
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(textToSpeak)}&voice=${selectedVoice}`;
       const audio = new Audio(ttsUrl);
       audio.onended = () => setTtsPlaying(false);
       audio.onerror = (e) => {
-        console.warn("Lỗi phát Google TTS, chuyển sang Web Speech API:", e);
+        console.warn("Lỗi phát Edge TTS, chuyển sang Web Speech API:", e);
         playNativeTTS(textToSpeak);
       };
 
@@ -110,7 +136,8 @@ function TestPageContent({ rawLevel }: { rawLevel: string }) {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = "en-US";
+      const voiceLang = selectedVoice.startsWith("en-GB") ? "en-GB" : selectedVoice.startsWith("en-AU") ? "en-AU" : "en-US";
+      utterance.lang = voiceLang;
       utterance.rate = 0.8;
       utterance.onstart = () => setTtsPlaying(true);
       utterance.onend = () => setTtsPlaying(false);
@@ -352,8 +379,34 @@ function TestPageContent({ rawLevel }: { rawLevel: string }) {
                 "{question.prompt}"
               </p>
               
+              {/* Voice Accent Selector */}
+              <div className="mt-4 mb-2 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-3 inline-block mx-auto max-w-full">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 text-center">
+                  Chọn accent của cô giáo AI:
+                </span>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {voices.map((v) => {
+                    const isSelected = selectedVoice === v.code;
+                    return (
+                      <button
+                        key={v.code}
+                        onClick={() => handleVoiceChange(v.code)}
+                        disabled={ttsPlaying || isProcessing}
+                        className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-indigo-50 border-indigo-400 text-indigo-600 font-extrabold scale-105"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        }`}
+                      >
+                        {v.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Audio specimen playback button */}
-              <div className="mt-6 flex justify-center">
+              <div className="mt-4 flex justify-center">
                 <button
                   onClick={playTTS}
                   disabled={ttsPlaying || isProcessing}
@@ -376,6 +429,32 @@ function TestPageContent({ rawLevel }: { rawLevel: string }) {
                 <span className="text-xs font-black text-blue-500 uppercase tracking-widest block mb-2">
                   Bấm loa để lắng nghe câu hỏi:
                 </span>
+                
+                {/* Voice Accent Selector */}
+                <div className="mt-1 mb-4 bg-white/80 border border-blue-100 rounded-2xl p-2.5 inline-block mx-auto max-w-full">
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider block mb-1.5 text-center">
+                    Chọn accent của cô giáo AI:
+                  </span>
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {voices.map((v) => {
+                      const isSelected = selectedVoice === v.code;
+                      return (
+                        <button
+                          key={v.code}
+                          onClick={() => handleVoiceChange(v.code)}
+                          disabled={ttsPlaying || isProcessing}
+                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-50 border-blue-400 text-blue-600 font-extrabold scale-105"
+                              : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                          }`}
+                        >
+                          {v.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 
                 <button
                   onClick={playTTS}
