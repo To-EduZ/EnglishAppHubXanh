@@ -215,3 +215,182 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * PUT: Updates an existing question's metadata and optionally its image file
+ */
+export async function PUT(req: NextRequest) {
+  try {
+    const { isFallback } = await connectToDatabase();
+    if (isFallback) {
+      return NextResponse.json(
+        { error: "Không thể kết nối cơ sở dữ liệu MongoDB Atlas!" },
+        { status: 500 }
+      );
+    }
+
+    const formData = await req.formData();
+    const id = formData.get("id") as string;
+    const level = formData.get("level") as string;
+    const partStr = formData.get("part") as string;
+    const type = formData.get("type") as string;
+    const examinerScript = formData.get("examinerScript") as string;
+    const contextTagsRaw = formData.get("contextTags") as string;
+    const expectedKeywordsRaw = formData.get("expectedKeywords") as string;
+    const targetGrammarRaw = formData.get("targetGrammar") as string;
+    const imageFile = formData.get("image") as File | null;
+
+    if (!id || !level || !partStr || !type || !examinerScript) {
+      return NextResponse.json(
+        { error: "Vui lòng cung cấp đầy đủ các trường dữ liệu bắt buộc!" },
+        { status: 400 }
+      );
+    }
+
+    const part = parseInt(partStr, 10);
+    if (isNaN(part)) {
+      return NextResponse.json(
+        { error: "Số phần thi (Part) phải là một số nguyên hợp lệ!" },
+        { status: 400 }
+      );
+    }
+
+    if (!["Starters", "Movers", "Flyers"].includes(level)) {
+      return NextResponse.json(
+        { error: "Cấp độ thi phải nằm trong khoảng: Starters, Movers, Flyers" },
+        { status: 400 }
+      );
+    }
+
+    const existingQuestion = await Question.findOne({ id });
+    if (!existingQuestion) {
+      return NextResponse.json(
+        { error: `Không tìm thấy câu hỏi có ID '${id}' để cập nhật!` },
+        { status: 404 }
+      );
+    }
+
+    // Parse lists
+    const contextTags = contextTagsRaw
+      ? contextTagsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const expectedKeywords = expectedKeywordsRaw
+      ? expectedKeywordsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const targetGrammar = targetGrammarRaw
+      ? targetGrammarRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    let imagePath = existingQuestion.imagePath;
+
+    // Upload new image/PDF if provided
+    if (imageFile && imageFile.size > 0) {
+      // Validate file size (10MB limit)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+      if (imageFile.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          {
+            error: `Dung lượng tệp tin quá lớn (${(imageFile.size / 1024 / 1024).toFixed(1)} MB). ` +
+                   `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
+                   `Admin vui lòng cắt riêng trang PDF hoặc nén lại nhé! 📕`
+          },
+          { status: 400 }
+        );
+      }
+
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const fileExtension = imageFile.name.split(".").pop()?.toLowerCase();
+      const isPdf = fileExtension === "pdf" || imageFile.type === "application/pdf";
+
+      const cloudinaryUploadResult = await new Promise<any>((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: "hubxanh_yle_pdf_digitalizer",
+            public_id: `${id}_${Date.now()}`,
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(buffer);
+      });
+
+      imagePath = cloudinaryUploadResult.secure_url;
+      if (isPdf && imagePath.endsWith(".pdf")) {
+        imagePath = imagePath.replace(/\.pdf$/, ".png").replace("/image/upload/", "/image/upload/pg_1/");
+      }
+    }
+
+    // Apply updates
+    existingQuestion.level = level as any;
+    existingQuestion.part = part;
+    existingQuestion.type = type;
+    existingQuestion.imagePath = imagePath;
+    existingQuestion.contextTags = contextTags;
+    existingQuestion.examinerScript = examinerScript;
+    existingQuestion.evaluationCriteria = {
+      expectedKeywords,
+      targetGrammar,
+    };
+
+    await existingQuestion.save();
+
+    return NextResponse.json({
+      success: true,
+      message: `Cập nhật học liệu mã '${id}' thành công! 🚀`,
+      data: existingQuestion,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi API PUT questions:", error);
+    return NextResponse.json(
+      { error: "Lỗi cập nhật dữ liệu học liệu: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE: Deletes a question from MongoDB by its 'id' query parameter
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const { isFallback } = await connectToDatabase();
+    if (isFallback) {
+      return NextResponse.json(
+        { error: "Không thể kết nối cơ sở dữ liệu MongoDB Atlas!" },
+        { status: 500 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Vui lòng truyền tham số mã 'id' học liệu cần xóa!" },
+        { status: 400 }
+      );
+    }
+
+    const deletedQuestion = await Question.findOneAndDelete({ id });
+    if (!deletedQuestion) {
+      return NextResponse.json(
+        { error: `Không tìm thấy học liệu có mã ID '${id}' để tiến hành xóa!` },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã xóa thành công học liệu mã '${id}' khỏi cơ sở dữ liệu! 🗑️`,
+    });
+  } catch (error: any) {
+    console.error("❌ Lỗi API DELETE questions:", error);
+    return NextResponse.json(
+      { error: "Không thể xóa học liệu: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+

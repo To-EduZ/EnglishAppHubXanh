@@ -48,6 +48,10 @@ export default function CambridgeImportPage() {
   // Table level filter tab: "All" | "Starters" | "Movers" | "Flyers"
   const [selectedFilter, setSelectedFilter] = useState<string>("All");
 
+  // Edit mode states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState("");
+
   // Form states
   const [qId, setQId] = useState("");
   const [level, setLevel] = useState<"Starters" | "Movers" | "Flyers">("Starters");
@@ -180,6 +184,64 @@ export default function CambridgeImportPage() {
     setExpectedKeywords("");
     setTargetGrammar("");
     removeImage();
+    setIsEditing(false);
+    setEditingId("");
+  };
+
+  // Handle Edit question (Load into form)
+  const handleEdit = (q: QuestionData) => {
+    setIsEditing(true);
+    setEditingId(q.id);
+    setQId(q.id);
+    setLevel(q.level);
+    setPart(String(q.part));
+    
+    const standardTypes = ["Scene_Description", "Object_Card", "Storytelling", "Find_Differences"];
+    if (standardTypes.includes(q.type)) {
+      setType(q.type);
+      setCustomType("");
+    } else {
+      setType("Custom");
+      setCustomType(q.type);
+    }
+    
+    setExaminerScript(q.examinerScript);
+    setContextTags(q.contextTags ? q.contextTags.join(", ") : "");
+    setExpectedKeywords(q.evaluationCriteria?.expectedKeywords ? q.evaluationCriteria.expectedKeywords.join(", ") : "");
+    setTargetGrammar(q.evaluationCriteria?.targetGrammar ? q.evaluationCriteria.targetGrammar.join(", ") : "");
+    
+    setImageFile(null);
+    setImagePreview(q.imagePath); // display current Cloudinary URL
+    
+    // Smooth scroll to top form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Handle Delete question
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm(
+      `Bé/Admin có chắc chắn muốn xóa vĩnh viễn học liệu mã '${id}' không? Hành động này không thể hoàn tác! 🗑️`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/questions?id=${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi xóa học liệu!");
+      }
+      showToast("success", `Đã xóa thành công học liệu mã '${id}' khỏi cơ sở dữ liệu! 🗑️`);
+      fetchQuestions();
+      
+      // If we are currently editing this question, reset the form
+      if (isEditing && editingId === id) {
+        resetForm();
+      }
+    } catch (err: any) {
+      showToast("error", err.message || "Không thể xóa học liệu!");
+    }
   };
 
   // AI Auto-digitalizer function
@@ -250,7 +312,7 @@ export default function CambridgeImportPage() {
       showToast("error", "Admin vui lòng nhập kịch bản phát âm của Giám khảo AI!");
       return;
     }
-    if (!imageFile) {
+    if (!imageFile && !imagePreview) {
       showToast("error", "Admin cần tải lên hình ảnh bóc tách cắt từ tệp PDF đề thi!");
       return;
     }
@@ -277,11 +339,14 @@ export default function CambridgeImportPage() {
       formData.append("contextTags", contextTags.trim());
       formData.append("expectedKeywords", expectedKeywords.trim());
       formData.append("targetGrammar", targetGrammar.trim());
-      formData.append("image", imageFile);
+      
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
 
-      console.log("📤 Đang gửi dữ liệu học liệu lên Cloudinary & MongoDB...");
+      console.log(isEditing ? "📤 Đang cập nhật dữ liệu học liệu..." : "📤 Đang gửi dữ liệu học liệu lên Cloudinary & MongoDB...");
       const res = await fetch("/api/questions", {
-        method: "POST",
+        method: isEditing ? "PUT" : "POST",
         body: formData,
       });
 
@@ -291,7 +356,11 @@ export default function CambridgeImportPage() {
         throw new Error(data.error || "Gặp sự cố không xác định khi upload!");
       }
 
-      showToast("success", `Số hóa học liệu mã '${qId}' lên Cloudinary và cơ sở dữ liệu MongoDB thành công! 🎉`);
+      if (isEditing) {
+        showToast("success", `Cập nhật học liệu mã '${qId}' thành công! 🎉`);
+      } else {
+        showToast("success", `Số hóa học liệu mã '${qId}' lên Cloudinary và cơ sở dữ liệu MongoDB thành công! 🎉`);
+      }
       resetForm();
       // Re-fetch questions list
       fetchQuestions();
@@ -403,7 +472,7 @@ export default function CambridgeImportPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
               <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
                 <PenTool className="w-6 h-6 text-indigo-500" />
-                Siêu dữ liệu Học liệu & Kịch bản AI
+                {isEditing ? "Cập Nhật Học Liệu & Kịch Bản AI ✏️" : "Siêu dữ liệu Học liệu & Kịch bản AI"}
               </h3>
               
               <button
@@ -444,12 +513,19 @@ export default function CambridgeImportPage() {
                     id="qId"
                     type="text"
                     required
+                    disabled={isEditing}
                     value={qId}
                     onChange={(e) => setQId(e.target.value)}
                     placeholder="Ví dụ: ST_P1_03"
-                    className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors"
+                    className={`w-full rounded-2xl border-2 p-3 text-sm font-extrabold outline-none transition-colors ${
+                      isEditing
+                        ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed font-sans"
+                        : "border-slate-200 focus:border-indigo-400 text-slate-700"
+                    }`}
                   />
-                  <span className="text-[10px] text-slate-400 font-bold block mt-1">Mã duy nhất: Cấp độ_Phần_Số câu</span>
+                  <span className="text-[10px] text-slate-400 font-bold block mt-1">
+                    {isEditing ? "Không thể thay đổi Mã ID khi đang chỉnh sửa" : "Mã duy nhất: Cấp độ_Phần_Số câu"}
+                  </span>
                 </div>
 
                 <div>
@@ -633,19 +709,26 @@ export default function CambridgeImportPage() {
                   disabled={isSubmitting}
                   className="btn-3d-gray px-6 py-4 text-sm font-black uppercase tracking-wider shrink-0 disabled:opacity-50"
                 >
-                  Xóa trắng 🗑️
+                  {isEditing ? "HỦY SỬA ❌" : "Xóa trắng 🗑️"}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`btn-3d-green flex-1 py-4 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-4 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                    isEditing ? "btn-3d-yellow text-slate-800" : "btn-3d-green"
+                  } ${
                     isSubmitting ? "brightness-95 shadow-none translate-y-[4px]" : "hover:scale-[1.01]"
                   }`}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      ĐANG TẢI LÊN CLOUDINARY & LƯU DB...
+                      {isEditing ? "ĐANG CẬP NHẬT DỮ LIỆU..." : "ĐANG TẢI LÊN CLOUDINARY & LƯU DB..."}
+                    </>
+                  ) : isEditing ? (
+                    <>
+                      <PenTool className="w-5 h-5" />
+                      CẬP NHẬT HỌC LIỆU 💾
                     </>
                   ) : (
                     <>
@@ -878,6 +961,7 @@ export default function CambridgeImportPage() {
                     <th className="py-4 px-4 text-xs font-black uppercase w-32">Loại bối cảnh</th>
                     <th className="py-4 px-4 text-xs font-black uppercase">Kịch bản Giám khảo AI</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-48">Tiêu chí chấm điểm</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase text-center w-36">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
@@ -955,6 +1039,25 @@ export default function CambridgeImportPage() {
                               </span>
                             </div>
                           )}
+                        </td>
+
+                        <td className="py-4 px-4 w-36 text-center align-middle">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleEdit(q)}
+                              className="btn-3d-yellow px-3 py-2 text-[10px] font-black flex items-center gap-1 hover:scale-105 active:translate-y-0.5 shadow-sm transition-transform cursor-pointer"
+                              title="Sửa học liệu này"
+                            >
+                              ✏️ SỬA
+                            </button>
+                            <button
+                              onClick={() => handleDelete(q.id)}
+                              className="btn-3d-pink px-3 py-2 text-[10px] font-black flex items-center gap-1 hover:scale-105 active:translate-y-0.5 shadow-sm transition-transform cursor-pointer"
+                              title="Xóa học liệu này"
+                            >
+                              🗑️ XÓA
+                            </button>
+                          </div>
                         </td>
 
                       </tr>
