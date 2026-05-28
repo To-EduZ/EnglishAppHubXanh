@@ -1,0 +1,185 @@
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { v2 as cloudinary } from "cloudinary";
+
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
+
+// Configure Cloudinary SDK
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. Verify Groq API Key and Cloudinary config
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        { error: "Vui lòng cấu hình GROQ_API_KEY trong file .env.local để sử dụng tính năng số hóa AI tự động! 🔑" },
+        { status: 500 }
+      );
+    }
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return NextResponse.json(
+        { error: "Vui lòng cấu hình đầy đủ Cloudinary để hệ thống tự động bóc tách trang PDF thành ảnh! ☁️" },
+        { status: 500 }
+      );
+    }
+
+    // 2. Parse FormData
+    const formData = await req.formData();
+    const imageFile = formData.get("image") as File | null;
+
+    if (!imageFile) {
+      return NextResponse.json(
+        { error: "Vui lòng tải lên tệp ảnh hoặc PDF đề thi để AI bóc tách tự động!" },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (Cloudinary free tier limit is 10MB for image/PDF uploads)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    if (imageFile.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          error: `Dung lượng tệp tin quá lớn (${(imageFile.size / 1024 / 1024).toFixed(1)} MB). ` +
+                 `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
+                 `Admin vui lòng cắt riêng trang PDF chứa bài thi nói (thường chỉ < 1 MB) hoặc nén tệp PDF trước khi tải lên nhé! 📕`
+        },
+        { status: 400 }
+      );
+    }
+
+    // 3. Convert File to base64
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    const fileExtension = imageFile.name.split(".").pop()?.toLowerCase();
+    const isPdf = fileExtension === "pdf" || imageFile.type === "application/pdf";
+    
+    let base64Image = "";
+    let mimeType = "";
+
+    if (isPdf) {
+      console.log(`🤖 [AI Auto-Digitalizer] Đang xử lý file PDF thông qua Cloudinary dynamic rendering...`);
+      // Upload PDF to temporary folder in Cloudinary
+      const cloudinaryResponse = await new Promise<any>((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: "hubxanh_yle_temp_pdf",
+            public_id: `temp_${Date.now()}`,
+            resource_type: "image", // PDFs are uploaded as image resource type
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(buffer);
+      });
+
+      let pngUrl = cloudinaryResponse.secure_url;
+      if (pngUrl.endsWith(".pdf")) {
+        pngUrl = pngUrl.replace(/\.pdf$/, ".png").replace("/image/upload/", "/image/upload/pg_1/");
+      }
+
+      console.log(`🤖 [AI Auto-Digitalizer] Đã render xong ảnh từ PDF trên Cloudinary: ${pngUrl}. Đang tải ảnh về để truyền cho AI...`);
+
+      // Fetch the rendered PNG from Cloudinary
+      const imgRes = await fetch(pngUrl);
+      if (!imgRes.ok) {
+        throw new Error("Không thể tải ảnh render từ Cloudinary!");
+      }
+      const imgArrayBuffer = await imgRes.arrayBuffer();
+      const imgBuffer = Buffer.from(imgArrayBuffer);
+      
+      base64Image = imgBuffer.toString("base64");
+      mimeType = "image/png";
+    } else {
+      base64Image = buffer.toString("base64");
+      mimeType = imageFile.type || "image/png";
+    }
+
+    console.log(`🤖 [AI Auto-Digitalizer] Đang phân tích nội dung học liệu qua Llama 4 Vision...`);
+
+    // 4. Query Groq Llama 4 Vision Model
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert Cambridge YLE (Young Learners English - Starters, Movers, Flyers) examiner and curriculum designer for primary children.
+Your task is to analyze the uploaded exam picture (which could be a Scene Description, Object Card, Storytelling sequence, or Find the Differences) and automatically generate structured metadata matching the Cambridge YLE exam standard.
+
+Analyze the image carefully:
+1. Determine the appropriate level ('Starters', 'Movers', or 'Flyers') based on the complexity of vocabulary and objects.
+2. Determine which part of the speaking exam it matches (Part 1, Part 2, Part 3, etc.).
+3. Choose a context type: 'Scene_Description' (if it's a main scene with many activities), 'Object_Card' (if it's a single item like a banana or frog), 'Storytelling' (if it's a comic panel/sequence of scenes), or 'Find_Differences' (if it has two similar pictures).
+4. Generate a unique, short Question ID prefix based on level and part (e.g. 'ST_P1_12' for Starters Part 1, 'MV_P3_08' for Movers Part 3, 'FL_P2_05' for Flyers Part 2). Make the serial number randomly between 10 and 99 to avoid standard duplicates.
+5. Write a professional, friendly, child-appropriate 'examinerScript' (what the AI examiner will ask the student in English). The examiner script should ask the child to point out objects or describe activities in the picture. Keep sentences simple and use standard YLE prompts (e.g., "Look at this bedroom. The boy is sleeping. Where is the clock? What is the cat doing?").
+6. Provide a list of 'contextTags' describing elements of the image (e.g. ["bedroom", "cat", "animals", "sleeping", "boy"]).
+7. Determine 'expectedKeywords' (the critical English vocabulary the child is expected to say in response).
+8. Determine 'targetGrammar' structures (e.g., ["present continuous", "prepositions", "there is", "there are"]).
+
+You MUST respond strictly in the following JSON format:
+{
+  "id": "ST_P1_XY or MV_P3_XY or FL_P2_XY",
+  "level": "Starters" | "Movers" | "Flyers",
+  "part": number (1 to 5),
+  "type": "Scene_Description" | "Object_Card" | "Storytelling" | "Find_Differences",
+  "examinerScript": "String of examiner questions in English",
+  "contextTags": ["tag1", "tag2", "tag3"],
+  "expectedKeywords": ["keyword1", "keyword2", "keyword3"],
+  "targetGrammar": ["grammar1", "grammar2"]
+}`,
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Analyze this Cambridge YLE exam picture, extract all metadata, and output the exact JSON document.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`,
+              },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_tokens: 800,
+    });
+
+    const aiResponseContent = completion.choices[0].message.content;
+    if (!aiResponseContent) {
+      throw new Error("Llama 3.2 Vision trả về phản hồi rỗng.");
+    }
+
+    console.log("✅ [AI Auto-Digitalizer] Phân tích hoàn tất:", aiResponseContent);
+    const parsedData = JSON.parse(aiResponseContent);
+
+    return NextResponse.json({
+      success: true,
+      data: parsedData,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Lỗi API POST questions/analyze:", error);
+    return NextResponse.json(
+      { error: "Không thể phân tích ảnh tự động bằng AI: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+

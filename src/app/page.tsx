@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Award, Trophy, Star, Clock, ChevronRight, Volume2, Sparkles, BarChart3, Mic, Headphones, BookOpen, PenTool, X } from "lucide-react";
+import { Award, Trophy, Star, Clock, ChevronRight, Volume2, Sparkles, BarChart3, Mic, Headphones, BookOpen, PenTool, X, Upload } from "lucide-react";
 
 interface AssessmentItem {
   _id: string;
@@ -112,6 +112,13 @@ export default function Dashboard() {
 
           {/* User Kid Status Dashboard */}
           <div className="flex items-center gap-4 bg-slate-50 border-2 border-slate-200 rounded-2xl px-5 py-2.5 shadow-inner">
+            <Link href="/dashboard/import">
+              <button className="btn-3d-purple px-3 py-1.5 text-xs font-black flex items-center gap-1">
+                <Upload className="w-4 h-4" />
+                SỐ HÓA
+              </button>
+            </Link>
+
             <Link href="/dashboard">
               <button className="btn-3d-blue px-3 py-1.5 text-xs font-black flex items-center gap-1">
                 <BarChart3 className="w-4 h-4" />

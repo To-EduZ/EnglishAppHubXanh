@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // Call the Edge TTS WebSocket collector helper
     const audioBuffer = await synthesizeSpeech(text, voice);
 
-    // Stream back MP3 audio bytes to browser using standard Uint8Array for Vercel compilation
+    // Stream back MP3 audio bytes to browser
     return new NextResponse(new Uint8Array(audioBuffer), {
       headers: {
         "Content-Type": "audio/mpeg",
