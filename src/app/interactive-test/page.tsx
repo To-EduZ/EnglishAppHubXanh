@@ -45,13 +45,21 @@ export default function InteractiveTest() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   
   // Custom Kid States collected during the test
   const [kidName, setKidName] = useState("Con");
   const [kidAge, setKidAge] = useState("7");
   const [favAnimal, setFavAnimal] = useState("");
   
+  // Stage 2: 2 Pictures Sequence States
+  const [picQuestions, setPicQuestions] = useState<any[]>([]);
+  const [pictureIndex, setPictureIndex] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [keywordsHitPic1, setKeywordsHitPic1] = useState(0);
+  const [totalProbingTurns, setTotalProbingTurns] = useState(0);
+  const [keywordsMentioned, setKeywordsMentioned] = useState<string[]>([]);
+  const [probingTurnsCount, setProbingTurnsCount] = useState(0);
+
   // Stage 3 (Reading Aloud & MCQ) States
   const [readingAccuracyState, setReadingAccuracyState] = useState(85);
   const [showMcq, setShowMcq] = useState(false);
@@ -59,9 +67,12 @@ export default function InteractiveTest() {
   const [mcqAnswered, setMcqAnswered] = useState(false);
   const [isMcqCorrect, setIsMcqCorrect] = useState<boolean | null>(null);
   
-  // Stage 4 (Writing & Spelling) States
+  // Stage 4 (Writing & spelling 2 words) States
+  const [writingTaskIndex, setWritingTaskIndex] = useState(0);
   const [typedWord, setTypedWord] = useState("");
   const [writingSubmitted, setWritingSubmitted] = useState(false);
+  const [spellingCorrect1, setSpellingCorrect1] = useState<boolean | null>(null);
+  const [spellingCorrect2, setSpellingCorrect2] = useState<boolean | null>(null);
   
   // Final aggregated scores out of 100
   const [scores, setScores] = useState({
@@ -70,10 +81,6 @@ export default function InteractiveTest() {
     reading: 80,
     writing: 100
   });
-
-  // Track conversational milestones
-  const [probingTurnsCount, setProbingTurnsCount] = useState(0);
-  const [keywordsMentioned, setKeywordsMentioned] = useState<string[]>([]);
   
   // MongoDB sync states
   const [isSaving, setIsSaving] = useState(false);
@@ -84,35 +91,51 @@ export default function InteractiveTest() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const referenceStory = "Max is a happy monkey. He lives in a tall coconut tree. He has two yellow bananas. Today, Max sees a little frog sitting in a pond.";
+  // Longer reference story
+  const referenceStory = "Max is a happy little monkey who lives in a very tall coconut tree in the jungle. He loves to eat sweet yellow bananas every morning. Today, Max looks down and sees a small green frog sitting on a leaf in the pond. The frog is jumping up and down and singing a funny song. Max waves hello and laughs happily!";
 
   const mcqQuestion = {
-    question: "What does Max have?",
+    question: "What does Max love to eat every morning?",
     options: [
-      "Two red apples 🍎",
-      "Two yellow bananas 🍌",
-      "Three green frogs 🐸"
+      "Red apples 🍎",
+      "Sweet yellow bananas 🍌",
+      "Green leaves 🍃"
     ],
     correctIndex: 1
   };
+
+  const spellingTasks = [
+    {
+      prompt: "Can you spell the word for the animal that lives in the tree? It starts with 'm'.",
+      correctWord: "monkey"
+    },
+    {
+      prompt: "Excellent! Now, can you spell the word for the yellow fruit that Max loves to eat? It starts with 'b'.",
+      correctWord: "banana"
+    }
+  ];
 
   // Auto-scroll chat history
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing, stage]);
 
-  // Fetch standard YLE question for Stage 2 (Miêu tả tranh)
+  // Fetch standard YLE questions for Stage 2 (Miêu tả tranh)
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const res = await fetch("/api/questions");
         const data = await res.json();
         if (data.success) {
-          const picQuestions = data.data.filter((q: any) => q.type === "Scene_Description" || q.imagePath);
-          if (picQuestions.length > 0) {
-            // Find a Movers scene or any first question
-            const selected = picQuestions.find((q: any) => q.level === "Movers") || picQuestions[0];
-            setCurrentQuestion(selected);
+          const questionsWithImages = data.data.filter((q: any) => q.type === "Scene_Description" || q.imagePath);
+          if (questionsWithImages.length > 0) {
+            // Pick a Movers scene or any questions
+            const moversQuestions = questionsWithImages.filter((q: any) => q.level === "Movers");
+            const sortedQuestions = moversQuestions.length > 0 ? moversQuestions : questionsWithImages;
+            
+            setPicQuestions(sortedQuestions);
+            // Default first picture
+            setCurrentQuestion(sortedQuestions[0]);
           }
         }
       } catch (err) {
@@ -185,6 +208,7 @@ export default function InteractiveTest() {
       
       if (stage === "picture" && currentQuestion) {
         formData.append("context", JSON.stringify({
+          pictureIndex,
           expectedKeywords: currentQuestion.evaluationCriteria?.expectedKeywords || []
         }));
       }
@@ -247,7 +271,27 @@ export default function InteractiveTest() {
           if (stage === "warmup") {
             setTimeout(() => setStage("picture"), 2500);
           } else if (stage === "picture") {
-            setTimeout(() => setStage("reading"), 2500);
+            // Handle sequential 2-picture logic
+            if (pictureIndex === 0) {
+              setTimeout(() => {
+                setKeywordsHitPic1(keywordsMentioned.length);
+                setTotalProbingTurns(prev => prev + probingTurnsCount);
+                setPictureIndex(1);
+                
+                // Switch to second question (use modulo fallback if only 1 image seeded)
+                const nextQuestion = picQuestions[1 % picQuestions.length] || currentQuestion;
+                setCurrentQuestion(nextQuestion);
+                
+                setKeywordsMentioned([]);
+                setProbingTurnsCount(0);
+                setIsProcessing(false);
+              }, 2500);
+            } else {
+              setTimeout(() => {
+                setTotalProbingTurns(prev => prev + probingTurnsCount);
+                setStage("reading");
+              }, 2500);
+            }
           } else if (stage === "reading") {
             // After reading aloud story, transition to the MCQ panel after a short delay
             setTimeout(() => setShowMcq(true), 2500);
@@ -279,7 +323,7 @@ export default function InteractiveTest() {
         setStage("writing");
       }, 3500);
     } else {
-      playTTS(`Good try! Max actually has ${mcqQuestion.options[mcqQuestion.correctIndex]}. Let's do some spelling now!`);
+      playTTS(`Good try! Max actually loves ${mcqQuestion.options[mcqQuestion.correctIndex]}. Let's do some spelling now!`);
       setTimeout(() => {
         setStage("writing");
       }, 4500);
@@ -291,39 +335,70 @@ export default function InteractiveTest() {
     e.preventDefault();
     if (!typedWord.trim()) return;
 
-    setWritingSubmitted(true);
-    const spellingCorrect = typedWord.toLowerCase().trim() === "monkey";
+    const isCorrect = typedWord.toLowerCase().trim() === spellingTasks[writingTaskIndex].correctWord;
 
-    // 1. Calculate Speaking: Warmup (100) + Picture Keywords hit + Reading accuracy
-    const expectedKeywordsLength = Math.max(currentQuestion?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
-    const pictureSpeaking = Math.round((keywordsMentioned.length / expectedKeywordsLength) * 100);
-    const speakingScore = Math.round((100 + pictureSpeaking + readingAccuracyState) / 3);
+    if (writingTaskIndex === 0) {
+      // Save Task 1 result
+      setSpellingCorrect1(isCorrect);
+      setWritingSubmitted(true);
+      
+      if (isCorrect) {
+        playTTS("Perfect! That's correct spelling! Next word!");
+      } else {
+        playTTS("Good try! Let's try spelling the next word!");
+      }
 
-    // 2. Calculate Listening: Probing turns speed + MCQ correctness
-    const pictureListening = Math.max(100 - (probingTurnsCount * 15), 60);
-    const mcqListening = isMcqCorrect ? 100 : 40;
-    const listeningScore = Math.round((pictureListening + mcqListening) / 2);
+      setTimeout(() => {
+        setTypedWord("");
+        setWritingSubmitted(false);
+        setWritingTaskIndex(1);
+      }, 2500);
+      
+    } else {
+      // Save Task 2 result
+      setSpellingCorrect2(isCorrect);
+      setWritingSubmitted(true);
+      
+      if (isCorrect) {
+        playTTS("Fantastic! Correct spelling!");
+      } else {
+        playTTS("Well done! You worked so hard!");
+      }
 
-    // 3. Calculate Reading: Reading aloud accuracy + MCQ correctness
-    const mcqReading = isMcqCorrect ? 100 : 30;
-    const readingScore = Math.round((readingAccuracyState + mcqReading) / 2);
+      // Calculate final aggregated scores across all 4 stages
+      const expectedKeywordsLength1 = Math.max(picQuestions[0]?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
+      const expectedKeywordsLength2 = Math.max(picQuestions[1 % picQuestions.length]?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
+      const totalExpected = expectedKeywordsLength1 + expectedKeywordsLength2;
+      const totalKeywordsHit = keywordsHitPic1 + keywordsMentioned.length;
 
-    // 4. Calculate Writing: spelling correctness
-    const writingScore = spellingCorrect ? 100 : 30;
+      const pictureSpeaking = Math.round((totalKeywordsHit / totalExpected) * 100);
+      const speakingScore = Math.round((100 + pictureSpeaking + readingAccuracyState) / 3);
 
-    const computedScores = {
-      speaking: speakingScore,
-      listening: listeningScore,
-      reading: readingScore,
-      writing: writingScore
-    };
+      const pictureListening = Math.max(100 - ((totalProbingTurns + probingTurnsCount) * 8), 65);
+      const mcqListening = isMcqCorrect ? 100 : 40;
+      const listeningScore = Math.round((pictureListening + mcqListening) / 2);
 
-    setScores(computedScores);
+      const mcqReading = isMcqCorrect ? 100 : 30;
+      const readingScore = Math.round((readingAccuracyState + mcqReading) / 2);
 
-    // Auto-transition to final Report Card
-    setTimeout(() => {
-      setStage("results");
-    }, 2000);
+      // Writing score: both correct (100), one correct (65), both wrong (30)
+      const correctSpellingsCount = (spellingCorrect1 ? 1 : 0) + (isCorrect ? 1 : 0);
+      const writingScore = correctSpellingsCount === 2 ? 100 : correctSpellingsCount === 1 ? 65 : 30;
+
+      const computedScores = {
+        speaking: speakingScore,
+        listening: listeningScore,
+        reading: readingScore,
+        writing: writingScore
+      };
+
+      setScores(computedScores);
+
+      // Auto-transition to final Report Card
+      setTimeout(() => {
+        setStage("results");
+      }, 2500);
+    }
   };
 
   // MongoDB sync logic to log results in real DB
@@ -355,19 +430,19 @@ export default function InteractiveTest() {
             level,
             skill,
             sentence: skill === "Speaking" 
-              ? "Entrance Interview: Life Communication & Picture Probing" 
+              ? "Entrance Interview: Life Communication & Double Picture Probing" 
               : skill === "Reading" 
               ? referenceStory 
-              : "Spelling target 'monkey'",
+              : "Double word spelling assessment",
             score: skillScore,
             stars,
             mispronouncedWords: [],
             feedback: {
               tutorComment: skill === "Speaking" 
-                ? `Bé ${kidName} miêu tả tranh sinh động và giao tiếp tự nhiên với cô giáo AI.` 
+                ? `Bé ${kidName} miêu tả 2 bức tranh sinh động và giao tiếp tự nhiên với cô giáo AI.` 
                 : skill === "Reading"
-                ? `Bé ${kidName} đọc tốt, phát âm chuẩn xác ${readingAccuracyState}% câu chuyện.`
-                : `Bé hoàn thành tốt bài thi ${skill} đầu vào.`,
+                ? `Bé ${kidName} đọc tốt câu chuyện dài, phát âm chuẩn xác ${readingAccuracyState}% số từ.`
+                : `Bé hoàn thành rất tốt phần thi ${skill} đầu vào của trung tâm.`,
               tips: "Chúc mừng con đã xuất sắc hoàn thành kỳ thi đánh giá năng lực! Hãy tiếp tục duy trì đam mê nhé con!"
             },
             roadmap: skill === "Speaking" 
@@ -455,15 +530,15 @@ export default function InteractiveTest() {
             </div>
             <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
               <span className="w-5 h-5 rounded-full bg-amber-100 border border-amber-200 text-amber-500 flex items-center justify-center shrink-0">2</span>
-              <span><strong>Listening & Speaking:</strong> Nhìn tranh và tương tả từ vựng bóc tách</span>
+              <span><strong>Speaking:</strong> Tương tác và miêu tả <strong>2 Bức tranh</strong> liên tiếp</span>
             </div>
             <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
               <span className="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-500 flex items-center justify-center shrink-0">3</span>
-              <span><strong>Reading:</strong> Đọc to truyện ngắn & Trả lời câu hỏi nhanh</span>
+              <span><strong>Reading:</strong> Đọc to <strong>Truyện dài</strong> & MCQ trắc nghiệm</span>
             </div>
             <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
               <span className="w-5 h-5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-500 flex items-center justify-center shrink-0">4</span>
-              <span><strong>Writing:</strong> Đánh vần và gõ từ vựng tiếng Anh</span>
+              <span><strong>Writing:</strong> Đánh vần và gõ <strong>2 câu viết</strong> (Không gợi ý!)</span>
             </div>
           </div>
 
@@ -479,8 +554,8 @@ export default function InteractiveTest() {
             BẮT ĐẦU PHÒNG THI
           </button>
           
-          <Link href="/dashboard" className="block mt-4 text-slate-400 font-bold hover:text-slate-600 text-xs">
-            Quay lại Dashboard
+          <Link href="/" className="block mt-4 text-slate-400 font-bold hover:text-slate-600 text-xs">
+            Quay lại Trang Chủ
           </Link>
         </div>
       </div>
@@ -491,7 +566,7 @@ export default function InteractiveTest() {
   if (stage === "results") {
     return (
       <div className="w-full min-h-screen pb-20 relative bg-pastel-bg overflow-x-hidden">
-        {/* Dynamic bubbles background */}
+        {/* Decorative bubbles */}
         <div className="bubble-bg top-12 left-8 w-24 h-24 animate-float" style={{ animationDelay: "0s" }} />
         <div className="bubble-bg top-32 right-12 w-28 h-28 animate-float" style={{ animationDelay: "3s" }} />
         <div className="bubble-bg bottom-16 left-16 w-32 h-32 animate-float" style={{ animationDelay: "6s" }} />
@@ -499,9 +574,9 @@ export default function InteractiveTest() {
         {/* Header bar */}
         <header className="w-full bg-white border-b-4 border-slate-100 py-4 px-4 sticky top-0 z-30 shadow-sm">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link href="/dashboard">
+            <Link href="/">
               <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
-                Quay Lại Dashboard
+                Quay Lại Trang Chủ
               </button>
             </Link>
             
@@ -616,7 +691,7 @@ export default function InteractiveTest() {
 
           </section>
 
-          {/* Empathetic AI Feedback Section */}
+          {/* AI Feedback Section */}
           <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
             <div className="flex flex-col sm:flex-row items-start gap-5">
               
@@ -681,7 +756,7 @@ export default function InteractiveTest() {
               <button 
                 onClick={saveResultsToDb}
                 disabled={isSaving}
-                className="btn-3d-green w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50"
+                className="btn-3d-green w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50 cursor-pointer"
               >
                 {isSaving ? (
                   <>
@@ -719,17 +794,23 @@ export default function InteractiveTest() {
                 setTypedWord("");
                 setWritingSubmitted(false);
                 setSaveSuccess(null);
+                setPictureIndex(0);
+                setKeywordsHitPic1(0);
+                setTotalProbingTurns(0);
+                setWritingTaskIndex(0);
+                setSpellingCorrect1(null);
+                setSpellingCorrect2(null);
               }}
-              className="btn-3d-yellow w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105"
+              className="btn-3d-yellow w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105 cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
               Thi Lại Bài Test 🔄
             </button>
 
-            <Link href="/dashboard" className="w-full sm:w-auto">
-              <button className="btn-3d-blue w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105">
+            <Link href="/" className="w-full sm:w-auto">
+              <button className="btn-3d-blue w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105 cursor-pointer">
                 <Home className="w-4 h-4" />
-                Về Dashboard 🏠
+                Về Trang Chủ 🏠
               </button>
             </Link>
 
@@ -771,7 +852,7 @@ export default function InteractiveTest() {
           />
         </div>
 
-        <Link href="/dashboard" className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200">
+        <Link href="/" className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200">
           Thoát
         </Link>
       </div>
@@ -779,9 +860,9 @@ export default function InteractiveTest() {
       {/* Context Area - Dynamically based on current stage */}
       {stage === "picture" && currentQuestion && (
         <div className="bg-amber-50 p-4 border-b border-amber-200 flex flex-col items-center select-none">
-          <h3 className="font-extrabold text-amber-700 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider">
+          <h3 className="font-extrabold text-amber-700 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider text-center">
             <ImageIcon className="w-5 h-5 shrink-0 animate-bounce" /> 
-            Look at the picture and describe what you see:
+            [Picture {pictureIndex + 1}/2] Look at this picture and describe what you see:
           </h3>
           {currentQuestion.imagePath && (
             <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-md border-4 border-white">
@@ -790,6 +871,7 @@ export default function InteractiveTest() {
                 alt="Test image" 
                 fill 
                 className="object-cover"
+                sizes="(max-width: 768px) 100vw, 450px"
               />
             </div>
           )}
@@ -819,7 +901,7 @@ export default function InteractiveTest() {
               </h3>
               
               <div className="bg-white border-4 border-emerald-300 rounded-3xl p-6 shadow-md my-4">
-                <p className="text-xl md:text-2xl font-black text-slate-800 leading-relaxed font-sans select-none">
+                <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed font-sans select-none">
                   "{referenceStory}"
                 </p>
               </div>
@@ -884,14 +966,16 @@ export default function InteractiveTest() {
           <div className="w-full max-w-xl text-center">
             <h3 className="font-extrabold text-indigo-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
               <PenTool className="w-5 h-5 animate-pulse text-indigo-500" />
-              Spelling Task! Type the correct word:
+              Spelling Task [{writingTaskIndex + 1}/2]! Type the correct word:
             </h3>
 
             <div className="bg-white border-4 border-indigo-200 rounded-3xl p-6 shadow-md my-4 flex flex-col items-center max-w-md mx-auto">
-              <div className="text-5xl mb-3 animate-bounce" style={{ animationDuration: "3s" }}>🐒</div>
+              <div className="text-5xl mb-3 animate-bounce" style={{ animationDuration: "3s" }}>
+                {writingTaskIndex === 0 ? "🐒" : "🍌"}
+              </div>
               
               <p className="text-slate-600 font-extrabold text-sm leading-relaxed mb-4 text-center">
-                Cô giáo AI hỏi: "You said you see a <strong>'monkey'</strong>. Can you type the word <strong>'monkey'</strong> for me?"
+                Cô giáo AI hỏi: "{spellingTasks[writingTaskIndex].prompt}"
               </p>
 
               <form onSubmit={handleWritingSubmit} className="w-full">
@@ -900,14 +984,16 @@ export default function InteractiveTest() {
                   value={typedWord}
                   onChange={(e) => setTypedWord(e.target.value)}
                   disabled={writingSubmitted}
-                  placeholder="Gõ từ 'monkey' vào đây nhé con..."
+                  placeholder="Gõ câu trả lời của con tại đây..."
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-indigo-200 rounded-2xl font-black text-center text-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all shadow-inner uppercase tracking-wider"
+                  autoComplete="off"
+                  autoCorrect="off"
                 />
 
                 <button
                   type="submit"
                   disabled={!typedWord.trim() || writingSubmitted}
-                  className="w-full mt-4 btn-3d-blue py-3 font-extrabold text-base flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50"
+                  className="w-full mt-4 btn-3d-blue py-3 font-extrabold text-base flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50 cursor-pointer"
                 >
                   Nộp bài viết 🚀
                 </button>
@@ -915,10 +1001,10 @@ export default function InteractiveTest() {
 
               {writingSubmitted && (
                 <div className="mt-4 animate-bounce-subtle text-xs font-black text-center">
-                  {typedWord.toLowerCase().trim() === "monkey" ? (
-                    <span className="text-emerald-600">🎉 Xuất sắc! Con đã viết chính xác từ này rồi!</span>
+                  {typedWord.toLowerCase().trim() === spellingTasks[writingTaskIndex].correctWord ? (
+                    <span className="text-emerald-600">🎉 Xuất sắc! Con đã viết chính xác rồi!</span>
                   ) : (
-                    <span className="text-rose-500">✍️ Con viết gần đúng rồi, cùng xem cô chấm điểm nhé!</span>
+                    <span className="text-rose-500">✍️ Con viết gần đúng rồi, cô đang ghi nhận điểm nhé!</span>
                   )}
                 </div>
               )}
@@ -959,7 +1045,7 @@ export default function InteractiveTest() {
             <button 
               onClick={startRecording}
               disabled={isProcessing || showMcq || stage === "writing"}
-              className="w-20 h-20 bg-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 hover:bg-green-600 disabled:opacity-30 disabled:hover:scale-100 transition-all shadow-lg"
+              className="w-20 h-20 bg-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 hover:bg-green-600 disabled:opacity-30 disabled:hover:scale-100 transition-all shadow-lg cursor-pointer"
             >
               <Mic className="w-8 h-8 mb-1" />
               <span className="text-[10px] font-black uppercase">Nói</span>
@@ -967,7 +1053,7 @@ export default function InteractiveTest() {
           ) : (
             <button 
               onClick={stopRecording}
-              className="w-20 h-20 bg-rose-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 animate-pulse shadow-lg shadow-rose-200"
+              className="w-20 h-20 bg-rose-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 animate-pulse shadow-lg shadow-rose-200 cursor-pointer"
             >
               <Square className="w-8 h-8 mb-1" />
               <span className="text-[10px] font-black uppercase">Dừng</span>

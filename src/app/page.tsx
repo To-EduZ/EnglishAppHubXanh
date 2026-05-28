@@ -181,6 +181,29 @@ export default function Dashboard() {
           <span className="hidden md:inline absolute right-12 bottom-4 text-9xl animate-float">🎉</span>
         </section>
 
+        {/* 2.5. Interactive YLE AI Placement Entrance Test Banner */}
+        <section className="bg-white rounded-3xl border-4 border-indigo-150 p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 mb-12 relative overflow-hidden">
+          <div className="absolute top-2 right-4 text-3xl animate-bounce" style={{ animationDelay: "1s" }}>🌟</div>
+          <div className="max-w-xl text-left relative z-10">
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-indigo-200 inline-flex items-center gap-1.5 mb-3 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 fill-indigo-300" />
+              BÀI TEST ĐẦU VÀO ĐỘC QUYỀN
+            </span>
+            <h3 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight">
+              Bài Thi Thử Thách Tương Tác AI 👩‍🏫
+            </h3>
+            <p className="text-sm font-bold text-slate-500 mt-2 leading-relaxed">
+              Đánh giá toàn diện 4 kỹ năng tiếng Anh (Nghe, Nói, Đọc, Viết) chuẩn Cambridge YLE qua hội thoại đối thoại sinh động với Cô giáo AI. Hệ thống tính điểm hình Khiên quốc tế và đề xuất lộ trình học tập tức thì!
+            </p>
+          </div>
+          <Link href="/interactive-test" className="w-full md:w-auto shrink-0 relative z-10">
+            <button className="w-full md:w-auto btn-3d-pink px-8 py-4 tracking-wider uppercase font-black flex items-center justify-center gap-2 hover:scale-105 transition-transform text-sm md:text-base cursor-pointer">
+              <Mic className="w-5 h-5 animate-pulse" />
+              THI TƯƠNG TÁC NGAY 🚀
+            </button>
+          </Link>
+        </section>
+
         {/* 3. Level Selection Section */}
         <section className="mb-14">
           <div className="text-center md:text-left mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
