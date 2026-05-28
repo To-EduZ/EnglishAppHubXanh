@@ -49,19 +49,43 @@ Luôn phản hồi bằng tiếng Anh thật đơn giản, ngắn gọn (1-2 câ
 Dùng nhiều emoji đáng yêu. 
 BẮT BUỘC TRẢ VỀ JSON với định dạng: { "aiResponse": "câu trả lời của bạn", "stageComplete": boolean }`;
 
+    let readingAccuracy = 100;
+    if (stage === "reading" && transcribedText) {
+      const referenceStory = "Max is a happy monkey. He lives in a tall coconut tree. He has two yellow bananas. Today, Max sees a little frog sitting in a pond.";
+      const storyWords = referenceStory.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").split(/\s+/).filter(Boolean);
+      const spokenWords = transcribedText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").split(/\s+/).filter(Boolean);
+      
+      let matchedCount = 0;
+      const tempSpoken = [...spokenWords];
+      storyWords.forEach((word) => {
+        const index = tempSpoken.indexOf(word);
+        if (index !== -1) {
+          matchedCount++;
+          tempSpoken.splice(index, 1);
+        }
+      });
+      readingAccuracy = Math.round((matchedCount / storyWords.length) * 100);
+      console.log(`🎯 [Reading Accuracy] Matched ${matchedCount}/${storyWords.length} words. Accuracy: ${readingAccuracy}%`);
+    }
+
     if (stage === "warmup") {
       const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
       
-      if (aiMessageCount >= 2) {
-         systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Warm-up.
+      if (aiMessageCount === 0) {
+        systemPrompt += `
+Nhiệm vụ: Bé vừa trả lời Tên của mình. 
+Hãy chào đón bé nồng nhiệt, khen ngợi và hỏi bé câu tiếp theo: "How old are you?"
+BẮT BUỘC set "stageComplete": false.`;
+      } else if (aiMessageCount === 1) {
+        systemPrompt += `
+Nhiệm vụ: Bé vừa trả lời Tuổi của mình.
+Hãy khen bé và hỏi câu tiếp theo: "What is your favorite animal?"
+BẮT BUỘC set "stageComplete": false.`;
+      } else {
+        systemPrompt += `
+Nhiệm vụ: KẾT THÚC phần Warm-up & Speaking.
 BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Great job! Let's look at a picture now. Are you ready?"
 VÀ BẮT BUỘC set "stageComplete": true. KHÔNG ĐƯỢC HỎI THÊM BẤT KỲ CÂU NÀO KHÁC.`;
-      } else {
-         systemPrompt += `
-Nhiệm vụ: Giao tiếp đời sống cơ bản (Warm-up). 
-Hãy khen ngợi phản hồi của học sinh và hỏi MỘT câu hỏi đơn giản (ví dụ: What's your name? How old are you? What's your favorite color?).
-BẮT BUỘC set "stageComplete": false.`;
       }
     } else if (stage === "picture") {
       const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
@@ -69,8 +93,8 @@ BẮT BUỘC set "stageComplete": false.`;
       
       if (aiMessageCount >= 3) {
          systemPrompt += `
-Nhiệm vụ: KẾT THÚC bài thi.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Excellent! You did a great job with the picture. That is the end of our test today."
+Nhiệm vụ: KẾT THÚC phần Miêu tả tranh.
+BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Excellent! You did a great job with the picture. Now, let's read a short story together. Are you ready?"
 VÀ BẮT BUỘC set "stageComplete": true.`;
       } else {
          systemPrompt += `
@@ -80,6 +104,13 @@ Hãy kiểm tra xem học sinh đã nói được các từ khóa nào chưa. Kh
 Nếu còn từ khóa chưa nói, hãy đặt 1 câu hỏi gợi ý thật đơn giản để bé nói ra từ đó (ví dụ: "I see a big animal with a long trunk. What is it?").
 BẮT BUỘC set "stageComplete": false.`;
       }
+    } else if (stage === "reading") {
+      systemPrompt += `
+Nhiệm vụ: Nhận xét bài đọc thành tiếng của học sinh (Reading Aloud).
+Học sinh vừa đọc xong câu chuyện ngắn. 
+Hãy khen ngợi sự cố gắng của bé và khích lệ bé cực kỳ nồng nhiệt.
+BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Fantastic reading! You read the story beautifully. Let's answer a quick question about it now!"
+VÀ BẮT BUỘC set "stageComplete": true.`;
     } else {
       // Default / End
       systemPrompt += `
@@ -132,6 +163,7 @@ Hãy nói: "You did amazingly well today! Goodbye and see you next time!" và se
       transcribedText,
       aiResponse: parsed.aiResponse,
       stageComplete: parsed.stageComplete,
+      readingAccuracy: stage === "reading" ? readingAccuracy : undefined,
     });
 
   } catch (error: any) {

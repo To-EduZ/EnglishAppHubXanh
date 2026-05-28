@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Square, Loader2, PlayCircle, Send, Image as ImageIcon } from "lucide-react";
+import { 
+  Mic, Square, Loader2, PlayCircle, Send, Image as ImageIcon,
+  Star, Award, Sparkles, Volume2, BookOpen, PenTool, CheckCircle2, 
+  XCircle, ChevronRight, Home, ArrowRight, Trophy, Shield, RefreshCw, Compass
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-type Stage = "intro" | "warmup" | "picture" | "completed";
+type Stage = "intro" | "warmup" | "picture" | "reading" | "writing" | "results";
 
 interface Message {
   id: string;
@@ -15,6 +19,27 @@ interface Message {
   audioUrl?: string;
 }
 
+// Custom YLE Shield SVG Component
+const YleShield = ({ filled }: { filled: boolean }) => (
+  <svg 
+    className={`w-6 h-8 drop-shadow-sm transition-all duration-300 ${filled ? "text-amber-500 fill-amber-400 scale-110" : "text-slate-200 fill-slate-100"}`} 
+    viewBox="0 0 24 30"
+  >
+    <path 
+      d="M12 2 L2 5 C2 15, 6 24, 12 28 C18 24, 22 15, 22 5 Z" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+    />
+    {filled && (
+      <path 
+        d="M12 7 L14 11 L19 11 L15 14 L17 19 L12 16 L7 19 L9 14 L5 11 L10 11 Z" 
+        fill="white" 
+        transform="translate(4, 5) scale(0.65)"
+      />
+    )}
+  </svg>
+);
+
 export default function InteractiveTest() {
   const [stage, setStage] = useState<Stage>("intro");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -22,17 +47,61 @@ export default function InteractiveTest() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   
+  // Custom Kid States collected during the test
+  const [kidName, setKidName] = useState("Con");
+  const [kidAge, setKidAge] = useState("7");
+  const [favAnimal, setFavAnimal] = useState("");
+  
+  // Stage 3 (Reading Aloud & MCQ) States
+  const [readingAccuracyState, setReadingAccuracyState] = useState(85);
+  const [showMcq, setShowMcq] = useState(false);
+  const [selectedMcqOption, setSelectedMcqOption] = useState<number | null>(null);
+  const [mcqAnswered, setMcqAnswered] = useState(false);
+  const [isMcqCorrect, setIsMcqCorrect] = useState<boolean | null>(null);
+  
+  // Stage 4 (Writing & Spelling) States
+  const [typedWord, setTypedWord] = useState("");
+  const [writingSubmitted, setWritingSubmitted] = useState(false);
+  
+  // Final aggregated scores out of 100
+  const [scores, setScores] = useState({
+    speaking: 85,
+    listening: 90,
+    reading: 80,
+    writing: 100
+  });
+
+  // Track conversational milestones
+  const [probingTurnsCount, setProbingTurnsCount] = useState(0);
+  const [keywordsMentioned, setKeywordsMentioned] = useState<string[]>([]);
+  
+  // MongoDB sync states
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll
+  const referenceStory = "Max is a happy monkey. He lives in a tall coconut tree. He has two yellow bananas. Today, Max sees a little frog sitting in a pond.";
+
+  const mcqQuestion = {
+    question: "What does Max have?",
+    options: [
+      "Two red apples 🍎",
+      "Two yellow bananas 🍌",
+      "Three green frogs 🐸"
+    ],
+    correctIndex: 1
+  };
+
+  // Auto-scroll chat history
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isProcessing]);
+  }, [messages, isProcessing, stage]);
 
-  // Fetch a question for the picture stage
+  // Fetch standard YLE question for Stage 2 (Miêu tả tranh)
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -41,7 +110,9 @@ export default function InteractiveTest() {
         if (data.success) {
           const picQuestions = data.data.filter((q: any) => q.type === "Scene_Description" || q.imagePath);
           if (picQuestions.length > 0) {
-            setCurrentQuestion(picQuestions[0]);
+            // Find a Movers scene or any first question
+            const selected = picQuestions.find((q: any) => q.level === "Movers") || picQuestions[0];
+            setCurrentQuestion(selected);
           }
         }
       } catch (err) {
@@ -52,7 +123,6 @@ export default function InteractiveTest() {
   }, []);
 
   const playTTS = (text: string) => {
-    // Strip emojis so TTS engine doesn't read them aloud
     const cleanText = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
     const url = `/api/tts?text=${encodeURIComponent(cleanText.trim())}`;
     if (audioRef.current) {
@@ -92,7 +162,7 @@ export default function InteractiveTest() {
       recorder.start();
       setIsRecording(true);
     } catch (err) {
-      alert("Vui lòng cấp quyền sử dụng Microphone nhé!");
+      alert("Con hãy cấp quyền sử dụng Microphone cho trình duyệt nhé! 🎤");
     }
   };
 
@@ -111,7 +181,7 @@ export default function InteractiveTest() {
       formData.append("stage", stage);
       
       const currentStageMessages = messages.filter(m => m.stage === stage);
-      formData.append("chatHistory", JSON.stringify(currentStageMessages.slice(-6))); // Only send recent to save tokens
+      formData.append("chatHistory", JSON.stringify(currentStageMessages.slice(-6)));
       
       if (stage === "picture" && currentQuestion) {
         formData.append("context", JSON.stringify({
@@ -127,23 +197,60 @@ export default function InteractiveTest() {
       const data = await res.json();
       
       if (data.success) {
-        // Add user message
+        // 1. Add user transcription message
         setMessages((prev) => [...prev, {
           id: Date.now().toString() + "_u",
           role: "user",
-          content: data.transcribedText || "(Audio)",
+          content: data.transcribedText || "(Con đã trả lời bằng giọng nói 🎤)",
           stage
         }]);
 
-        // Add AI message
+        // 2. Add AI reply
         addAiMessage(data.aiResponse);
 
-        // Check stage progression
+        // 3. Extract kid info dynamically in Stage 1 Warmup
+        if (stage === "warmup") {
+          const userMsgs = messages.filter(m => m.role === "user");
+          const transcript = (data.transcribedText || "").trim();
+          
+          if (userMsgs.length === 0) {
+            // First user response: Name
+            const name = transcript.replace(/(my name is|i am|tên con là|tên là|con là)/gi, "").trim();
+            setKidName(name || "Con");
+          } else if (userMsgs.length === 1) {
+            // Second user response: Age
+            const age = transcript.replace(/[^0-9]/g, "");
+            setKidAge(age || "7");
+          } else if (userMsgs.length === 2) {
+            // Third user response: Favorite animal
+            setFavAnimal(transcript || "monkey");
+          }
+        }
+
+        // 4. Track keywords and probing turns during Stage 2 Picture description
+        if (stage === "picture" && currentQuestion) {
+          const expected = currentQuestion.evaluationCriteria?.expectedKeywords || [];
+          const spoken = (data.transcribedText || "").toLowerCase();
+          const newlyFound = expected.filter((kw: string) => spoken.includes(kw.toLowerCase()));
+          
+          setKeywordsMentioned((prev) => Array.from(new Set([...prev, ...newlyFound])));
+          setProbingTurnsCount(prev => prev + 1);
+        }
+
+        // 5. Track reading accuracy in Stage 3 Reading Aloud
+        if (stage === "reading") {
+          setReadingAccuracyState(data.readingAccuracy || 85);
+        }
+
+        // 6. Handle automatic stage transitions
         if (data.stageComplete) {
           if (stage === "warmup") {
-            setTimeout(() => setStage("picture"), 2000);
+            setTimeout(() => setStage("picture"), 2500);
           } else if (stage === "picture") {
-            setTimeout(() => setStage("completed"), 2000);
+            setTimeout(() => setStage("reading"), 2500);
+          } else if (stage === "reading") {
+            // After reading aloud story, transition to the MCQ panel after a short delay
+            setTimeout(() => setShowMcq(true), 2500);
           }
         }
       } else {
@@ -157,24 +264,222 @@ export default function InteractiveTest() {
     }
   };
 
+  // Stage 3 MCQ Option click logic
+  const handleMcqSelect = (optionIndex: number) => {
+    if (mcqAnswered) return;
+    
+    setSelectedMcqOption(optionIndex);
+    setMcqAnswered(true);
+    const correct = optionIndex === mcqQuestion.correctIndex;
+    setIsMcqCorrect(correct);
+
+    if (correct) {
+      playTTS("Perfect! You got it right! Let's do some spelling now!");
+      setTimeout(() => {
+        setStage("writing");
+      }, 3500);
+    } else {
+      playTTS(`Good try! Max actually has ${mcqQuestion.options[mcqQuestion.correctIndex]}. Let's do some spelling now!`);
+      setTimeout(() => {
+        setStage("writing");
+      }, 4500);
+    }
+  };
+
+  // Stage 4 Writing submission & scoring calculation
+  const handleWritingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!typedWord.trim()) return;
+
+    setWritingSubmitted(true);
+    const spellingCorrect = typedWord.toLowerCase().trim() === "monkey";
+
+    // 1. Calculate Speaking: Warmup (100) + Picture Keywords hit + Reading accuracy
+    const expectedKeywordsLength = Math.max(currentQuestion?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
+    const pictureSpeaking = Math.round((keywordsMentioned.length / expectedKeywordsLength) * 100);
+    const speakingScore = Math.round((100 + pictureSpeaking + readingAccuracyState) / 3);
+
+    // 2. Calculate Listening: Probing turns speed + MCQ correctness
+    const pictureListening = Math.max(100 - (probingTurnsCount * 15), 60);
+    const mcqListening = isMcqCorrect ? 100 : 40;
+    const listeningScore = Math.round((pictureListening + mcqListening) / 2);
+
+    // 3. Calculate Reading: Reading aloud accuracy + MCQ correctness
+    const mcqReading = isMcqCorrect ? 100 : 30;
+    const readingScore = Math.round((readingAccuracyState + mcqReading) / 2);
+
+    // 4. Calculate Writing: spelling correctness
+    const writingScore = spellingCorrect ? 100 : 30;
+
+    const computedScores = {
+      speaking: speakingScore,
+      listening: listeningScore,
+      reading: readingScore,
+      writing: writingScore
+    };
+
+    setScores(computedScores);
+
+    // Auto-transition to final Report Card
+    setTimeout(() => {
+      setStage("results");
+    }, 2000);
+  };
+
+  // MongoDB sync logic to log results in real DB
+  const saveResultsToDb = async () => {
+    setIsSaving(true);
+    try {
+      const skills: ("Speaking" | "Listening" | "Reading" | "Writing")[] = ["Speaking", "Listening", "Reading", "Writing"];
+      const level = scores.speaking >= 85 ? "Flyers" : scores.speaking >= 60 ? "Movers" : "Starters";
+      
+      const promises = skills.map(async (skill) => {
+        let skillScore = 0;
+        if (skill === "Speaking") skillScore = scores.speaking;
+        else if (skill === "Listening") skillScore = scores.listening;
+        else if (skill === "Reading") skillScore = scores.reading;
+        else if (skill === "Writing") skillScore = scores.writing;
+        
+        let stars = 5;
+        if (skillScore >= 85) stars = 5;
+        else if (skillScore >= 70) stars = 4;
+        else if (skillScore >= 50) stars = 3;
+        else if (skillScore >= 30) stars = 2;
+        else stars = 1;
+
+        const res = await fetch("/api/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: `kid_entrance_${Date.now()}`,
+            level,
+            skill,
+            sentence: skill === "Speaking" 
+              ? "Entrance Interview: Life Communication & Picture Probing" 
+              : skill === "Reading" 
+              ? referenceStory 
+              : "Spelling target 'monkey'",
+            score: skillScore,
+            stars,
+            mispronouncedWords: [],
+            feedback: {
+              tutorComment: skill === "Speaking" 
+                ? `Bé ${kidName} miêu tả tranh sinh động và giao tiếp tự nhiên với cô giáo AI.` 
+                : skill === "Reading"
+                ? `Bé ${kidName} đọc tốt, phát âm chuẩn xác ${readingAccuracyState}% câu chuyện.`
+                : `Bé hoàn thành tốt bài thi ${skill} đầu vào.`,
+              tips: "Chúc mừng con đã xuất sắc hoàn thành kỳ thi đánh giá năng lực! Hãy tiếp tục duy trì đam mê nhé con!"
+            },
+            roadmap: skill === "Speaking" 
+              ? ["Luyện tập nhại giọng theo AI trước gương", "Tự tin kể câu chuyện ngắn"] 
+              : ["Xem lại lỗi nhỏ và luyện đọc to mỗi tối để nhớ chữ lâu hơn."]
+          })
+        });
+        const json = await res.json();
+        return json;
+      });
+
+      const results = await Promise.all(promises);
+      const successful = results.every(r => r.success);
+      if (successful) {
+        setSaveSuccess(true);
+      } else {
+        setSaveSuccess(false);
+      }
+    } catch (err) {
+      console.error("Lỗi đồng bộ MongoDB:", err);
+      setSaveSuccess(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Convert Score to YLE shields (1 to 5)
+  const getShieldsCount = (score: number) => {
+    if (score >= 90) return 5;
+    if (score >= 75) return 4;
+    if (score >= 50) return 3;
+    if (score >= 30) return 2;
+    return 1;
+  };
+
+  const getOverallLevel = (speakingScore: number) => {
+    if (speakingScore >= 85) return { name: "Flyers (A2)", mascot: "🦁", title: "Lion Dũng Cảm", theme: "bg-blue-50 border-blue-200 text-blue-700", desc: "Wow! Bé có năng lực Tiếng Anh thật kinh ngạc! Con phát âm cực kỳ chuẩn xác, nghe hiểu nhanh nhạy và viết chính tả hoàn hảo. Con hoàn toàn sẵn sàng chinh phục các kỳ thi chuẩn quốc tế Flyers và đạt điểm tuyệt đối. Cô rất tự hào về con! 🦁🏆" };
+    if (speakingScore >= 60) return { name: "Movers (A1)", mascot: "🐒", title: "Monkey Thông Minh", theme: "bg-amber-50 border-amber-200 text-amber-700", desc: "Chúc mừng bé xuất sắc đạt cấp độ Movers! Con có vốn từ vựng tốt, miêu tả tranh sinh động và đọc câu chuyện rất lưu loát. Hãy rèn luyện thêm ngữ pháp và chính tả khi viết câu để chuẩn bị cho nấc thang Flyers đầy thú vị tiếp theo nhé! 🐒👑" };
+    return { name: "Starters (Pre-A1)", mascot: "🦛", title: "Hippo Dễ Thương", theme: "bg-pink-50 border-pink-200 text-pink-700", desc: "Bé ơi, con đã rất dũng cảm hoàn thành bài thi! Con có phản xạ nghe nói cơ bản, nhận diện được các từ quen thuộc. Cùng cô giáo AI rèn luyện thêm vốn từ vựng và tự tin bật âm để nhanh chóng chinh phục nấc thang Movers nhé! Cô chúc mừng con! 🦛🌟" };
+  };
+
+  const roadmapTasks = () => {
+    if (scores.speaking >= 85) {
+      return [
+        "Thử thách tự viết 1 đoạn văn ngắn 5 câu giới thiệu về bản thân và gia đình ✍️",
+        "Luyện nghe các đoạn hội thoại dài và tóm tắt lại ý chính 🎧",
+        "Trở thành trợ giảng nhí giúp cô giáo AI hướng dẫn các bạn nhỏ hơn đọc bài nhé 👩‍🏫"
+      ];
+    } else if (scores.speaking >= 60) {
+      return [
+        "Luyện miêu tả 1 bức tranh con thích bằng 3 câu tiếng Anh trôi chảy 🖼️",
+        "Luyện chép chính tả 3 từ vựng khó chủ đề trường học và sở thích 📓",
+        "Đọc to câu chuyện ngắn mỗi tối để luyện ngữ điệu lên xuống tự nhiên 📖"
+      ];
+    } else {
+      return [
+        "Luyện nghe & nhại giọng theo cô giáo AI 3 câu nói cơ bản mỗi ngày 🗣️",
+        "Chơi trò chơi 'Đuổi hình bắt chữ' để tăng 20 từ vựng chủ đề phòng ngủ & động vật 🧸",
+        "Viết nắn nót bảng chữ cái tiếng Anh và các từ ngắn 3 lần vào vở học tập ✍️"
+      ];
+    }
+  };
+
+  const overallLevelInfo = getOverallLevel(scores.speaking);
+
+  // 1. Intro view
   if (stage === "intro") {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-blue-100">
-          <div className="text-6xl mb-4">🌟</div>
-          <h1 className="text-3xl font-black text-blue-600 mb-2">Interactive AI Test</h1>
-          <p className="text-slate-600 mb-8 font-medium">
-            Bài thi giao tiếp 1-kèm-1 với cô giáo AI. Con hãy bật loa và mic lên nhé!
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        {/* Decorative background bubbles */}
+        <div className="bubble-bg top-12 left-8 w-24 h-24 animate-float" style={{ animationDelay: "0s" }} />
+        <div className="bubble-bg top-32 right-12 w-28 h-28 animate-float" style={{ animationDelay: "3s" }} />
+        <div className="bubble-bg bottom-16 left-16 w-32 h-32 animate-float" style={{ animationDelay: "6s" }} />
+
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-blue-100 relative z-10">
+          <div className="text-6xl mb-4 animate-bounce" style={{ animationDuration: "2.5s" }}>🌟</div>
+          <h1 className="text-3xl font-black text-blue-600 mb-2">BÀI THI TƯƠNG TÁC AI</h1>
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Đánh giá năng lực đầu vào</h3>
+          
+          <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-200 space-y-3 mb-8">
+            <h4 className="font-extrabold text-xs text-slate-500 uppercase tracking-wider">Lộ trình bài test:</h4>
+            <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
+              <span className="w-5 h-5 rounded-full bg-pink-100 border border-pink-200 text-pink-500 flex items-center justify-center shrink-0">1</span>
+              <span><strong>Warm-up:</strong> Chào hỏi tự nhiên, phản xạ nói cơ bản</span>
+            </div>
+            <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
+              <span className="w-5 h-5 rounded-full bg-amber-100 border border-amber-200 text-amber-500 flex items-center justify-center shrink-0">2</span>
+              <span><strong>Listening & Speaking:</strong> Nhìn tranh và tương tả từ vựng bóc tách</span>
+            </div>
+            <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
+              <span className="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-500 flex items-center justify-center shrink-0">3</span>
+              <span><strong>Reading:</strong> Đọc to truyện ngắn & Trả lời câu hỏi nhanh</span>
+            </div>
+            <div className="flex items-start gap-2.5 text-xs text-slate-600 font-bold">
+              <span className="w-5 h-5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-500 flex items-center justify-center shrink-0">4</span>
+              <span><strong>Writing:</strong> Đánh vần và gõ từ vựng tiếng Anh</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500 mb-8 font-extrabold">
+            Bé hãy bật loa thật to và chuẩn bị sát Mic để thi cùng cô giáo AI nhé! 🎤👩‍🏫
           </p>
+
           <button 
             onClick={startTest}
-            className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl font-bold text-xl shadow-lg hover:scale-105 transition-transform"
+            className="w-full btn-3d-green py-4 font-bold text-xl shadow-lg hover:scale-105 transition-transform"
           >
-            <PlayCircle className="inline-block mr-2 w-6 h-6" />
-            Bắt đầu bài thi
+            <PlayCircle className="inline-block mr-2 w-6 h-6 animate-pulse" />
+            BẮT ĐẦU PHÒNG THI
           </button>
           
-          <Link href="/dashboard" className="block mt-4 text-slate-400 font-bold hover:text-slate-600">
+          <Link href="/dashboard" className="block mt-4 text-slate-400 font-bold hover:text-slate-600 text-xs">
             Quay lại Dashboard
           </Link>
         </div>
@@ -182,33 +487,304 @@ export default function InteractiveTest() {
     );
   }
 
+  // 2. Report Card view (Results screen)
+  if (stage === "results") {
+    return (
+      <div className="w-full min-h-screen pb-20 relative bg-pastel-bg overflow-x-hidden">
+        {/* Dynamic bubbles background */}
+        <div className="bubble-bg top-12 left-8 w-24 h-24 animate-float" style={{ animationDelay: "0s" }} />
+        <div className="bubble-bg top-32 right-12 w-28 h-28 animate-float" style={{ animationDelay: "3s" }} />
+        <div className="bubble-bg bottom-16 left-16 w-32 h-32 animate-float" style={{ animationDelay: "6s" }} />
+
+        {/* Header bar */}
+        <header className="w-full bg-white border-b-4 border-slate-100 py-4 px-4 sticky top-0 z-30 shadow-sm">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <Link href="/dashboard">
+              <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
+                Quay Lại Dashboard
+              </button>
+            </Link>
+            
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-2xl">
+              <Trophy className="w-5 h-5 text-amber-500 animate-bounce" />
+              <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
+                Kết Quả Đánh Giá Năng Lực Đầu Vào
+              </span>
+            </div>
+
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center border-2 border-emerald-300">
+              <span className="text-lg">👑</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-3xl w-full mx-auto px-4 mt-8 flex flex-col gap-8 relative z-10">
+          
+          {/* Certificate Showcase Card */}
+          <section className="bg-white rounded-3xl border-4 border-amber-300 p-8 shadow-xl text-center relative overflow-hidden">
+            <div className="absolute top-2 left-6 text-2xl animate-bounce" style={{ animationDelay: "1s" }}>✨</div>
+            <div className="absolute top-8 right-8 text-2xl animate-bounce" style={{ animationDelay: "2.5s" }}>🎈</div>
+            
+            <span className="bg-blue-50 text-blue-600 text-xs font-black uppercase tracking-wider px-4 py-1.5 rounded-full border border-blue-200 inline-flex items-center gap-1.5 mb-4 shadow-sm">
+              <Award className="w-3.5 h-3.5 text-blue-500 fill-blue-100" />
+              Chứng Nhận Năng Lực Quốc Tế Cambridge YLE
+            </span>
+
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+              BẢNG KẾT QUẢ CỦA BÉ {kidName.toUpperCase()}
+            </h2>
+            <p className="text-sm text-slate-400 font-extrabold mt-1">Tuổi học viên: {kidAge} tuổi</p>
+
+            {/* Recommended level badge */}
+            <div className="my-8 max-w-sm mx-auto">
+              <div className={`border-2 rounded-3xl p-6 shadow-md transition-all hover:scale-105 duration-300 ${overallLevelInfo.theme}`}>
+                <span className="text-5xl block animate-bounce" style={{ animationDuration: "2s" }}>
+                  {overallLevelInfo.mascot}
+                </span>
+                <span className="text-xs font-black opacity-60 uppercase tracking-widest block mt-2">
+                  Trình độ khuyến nghị
+                </span>
+                <span className="text-3xl font-black block mt-1 tracking-tight font-sans">
+                  {overallLevelInfo.name}
+                </span>
+                <span className="inline-block mt-3 bg-white/70 px-3 py-1 rounded-xl text-xs font-bold border border-current">
+                  {overallLevelInfo.title}
+                </span>
+              </div>
+            </div>
+
+            {/* YLE Shields Matrix Grid */}
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 shadow-inner mt-6">
+              <h3 className="text-sm font-black text-slate-500 uppercase tracking-wider mb-6">
+                Đánh giá theo 4 kỹ năng ngôn ngữ
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                {/* Speaking */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-700">🎤 Speaking (Kỹ năng Nói)</h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.speaking}/100</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <YleShield key={i} filled={i < getShieldsCount(scores.speaking)} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Listening */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-700">🎧 Listening (Kỹ năng Nghe)</h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.listening}/100</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <YleShield key={i} filled={i < getShieldsCount(scores.listening)} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reading */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-700">📖 Reading (Kỹ năng Đọc)</h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.reading}/100</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <YleShield key={i} filled={i < getShieldsCount(scores.reading)} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Writing */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-700">✍️ Writing (Kỹ năng Viết)</h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.writing}/100</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <YleShield key={i} filled={i < getShieldsCount(scores.writing)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          {/* Empathetic AI Feedback Section */}
+          <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start gap-5">
+              
+              <div className="shrink-0 flex sm:flex-col items-center gap-2 self-center sm:self-start bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 w-full sm:w-28 text-center shadow-inner">
+                <span className="text-5xl animate-bounce" style={{ animationDuration: "2.5s" }}>
+                  {overallLevelInfo.mascot}
+                </span>
+                <div>
+                  <p className="text-[11px] font-black text-slate-700 leading-tight">
+                    {overallLevelInfo.title}
+                  </p>
+                  <p className="text-[9px] font-extrabold text-slate-400 mt-0.5">Cô giáo AI</p>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full">
+                <div className="relative bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-5 shadow-sm">
+                  <div className="hidden sm:block absolute left-0 top-8 w-4 h-4 bg-emerald-50 border-l-2 border-b-2 border-emerald-200 transform -translate-x-[9px] rotate-45" />
+                  
+                  <h4 className="text-emerald-800 font-extrabold text-sm mb-2 flex items-center gap-1.5">
+                    Lời khuyên nồng nhiệt của cô giáo dành cho bé {kidName}:
+                  </h4>
+                  
+                  <p className="text-slate-700 text-sm font-extrabold leading-relaxed">
+                    "{overallLevelInfo.desc}"
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Learning Roadmap checklist */}
+          <section className="bg-white rounded-3xl border-4 border-slate-100 p-6 md:p-8 shadow-xl">
+            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-4 border-b pb-4">
+              <Compass className="w-6 h-6 text-blue-500 animate-spin" style={{ animationDuration: "8s" }} />
+              Lộ trình rèn luyện nâng cao năng lực 🚀
+            </h3>
+            
+            <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
+              Dựa trên kết quả thi đầu vào, cô giáo AI đã chuẩn hóa riêng cho con 3 bài tập nhỏ luyện tập tại nhà:
+            </p>
+
+            <div className="space-y-4">
+              {roadmapTasks().map((task, index) => (
+                <div key={index} className="border-2 border-blue-50 bg-white rounded-2xl p-4 flex items-start gap-3 shadow-sm hover:border-blue-200 transition-colors">
+                  <span className="inline-block text-xs font-black bg-blue-100/60 text-blue-600 px-2 py-0.5 rounded-md mr-2 font-mono shrink-0">
+                    Bài {index + 1}
+                  </span>
+                  <div className="text-sm font-extrabold leading-relaxed text-slate-700">
+                    {task}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Control Actions / MongoDB Sync trigger */}
+          <section className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-20">
+            
+            {saveSuccess === null ? (
+              <button 
+                onClick={saveResultsToDb}
+                disabled={isSaving}
+                className="btn-3d-green w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Đang lưu trữ...
+                  </>
+                ) : (
+                  <>
+                    Lưu kết quả học tập 💾
+                  </>
+                )}
+              </button>
+            ) : saveSuccess ? (
+              <div className="w-full sm:w-auto px-6 py-3 bg-emerald-50 border-2 border-emerald-300 text-emerald-700 rounded-2xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                Đồng bộ database thành công! 🚀
+              </div>
+            ) : (
+              <div className="w-full sm:w-auto px-6 py-3 bg-rose-50 border-2 border-rose-300 text-rose-700 rounded-2xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm">
+                <XCircle className="w-4 h-4 shrink-0" />
+                Không thể kết nối. Lưu offline! 🔌
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setStage("intro");
+                setMessages([]);
+                setKeywordsMentioned([]);
+                setProbingTurnsCount(0);
+                setShowMcq(false);
+                setSelectedMcqOption(null);
+                setMcqAnswered(false);
+                setIsMcqCorrect(null);
+                setTypedWord("");
+                setWritingSubmitted(false);
+                setSaveSuccess(null);
+              }}
+              className="btn-3d-yellow w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Thi Lại Bài Test 🔄
+            </button>
+
+            <Link href="/dashboard" className="w-full sm:w-auto">
+              <button className="btn-3d-blue w-full sm:w-auto px-8 py-4 text-sm tracking-wider uppercase flex items-center justify-center gap-1 hover:scale-105">
+                <Home className="w-4 h-4" />
+                Về Dashboard 🏠
+              </button>
+            </Link>
+
+          </section>
+
+        </main>
+      </div>
+    );
+  }
+
+  // 3. Main Testing stages interface
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col max-w-4xl mx-auto h-screen relative">
       {/* Hidden audio element for TTS */}
       <audio ref={audioRef} className="hidden" />
 
-      {/* Header */}
+      {/* Header with Stage indicators */}
       <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-10 border-b">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl">👩‍🏫</div>
           <div>
             <h2 className="font-bold text-slate-800">Cô giáo AI</h2>
-            <p className="text-xs text-blue-500 font-medium">Đang trong phòng thi ({stage})</p>
+            <p className="text-xs text-blue-500 font-medium capitalize">
+              Đang trong phòng thi (Giai đoạn {stage === "warmup" ? "1" : stage === "picture" ? "2" : stage === "reading" ? "3" : "4"})
+            </p>
           </div>
         </div>
+
+        {/* Cambridge Progress Bar */}
+        <div className="hidden sm:flex items-center gap-2 max-w-xs w-full bg-slate-100 rounded-full h-3 border border-slate-200 px-0.5 overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
+            style={{ 
+              width: 
+                stage === "warmup" ? "25%" : 
+                stage === "picture" ? "50%" : 
+                stage === "reading" ? "75%" : "95%" 
+            }}
+          />
+        </div>
+
         <Link href="/dashboard" className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200">
           Thoát
         </Link>
       </div>
 
-      {/* Context Area (e.g. Picture) */}
+      {/* Context Area - Dynamically based on current stage */}
       {stage === "picture" && currentQuestion && (
-        <div className="bg-amber-50 p-4 border-b border-amber-200 flex flex-col items-center">
-          <h3 className="font-bold text-amber-700 mb-2 flex items-center gap-2">
-            <ImageIcon className="w-5 h-5" /> Look at the picture and answer
+        <div className="bg-amber-50 p-4 border-b border-amber-200 flex flex-col items-center select-none">
+          <h3 className="font-extrabold text-amber-700 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <ImageIcon className="w-5 h-5 shrink-0 animate-bounce" /> 
+            Look at the picture and describe what you see:
           </h3>
           {currentQuestion.imagePath && (
-            <div className="relative w-full max-w-md aspect-video rounded-xl overflow-hidden shadow-md">
+            <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-md border-4 border-white">
               <Image 
                 src={currentQuestion.imagePath} 
                 alt="Test image" 
@@ -217,10 +793,141 @@ export default function InteractiveTest() {
               />
             </div>
           )}
+          
+          {/* Real-time word mentions rewards for kids */}
+          {keywordsMentioned.length > 0 && (
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {keywordsMentioned.map((word) => (
+                <span key={word} className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 animate-bounce-subtle">
+                  ✨ {word}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Chat Messages */}
+      {stage === "reading" && (
+        <div className="bg-emerald-50 p-6 border-b border-emerald-200 flex flex-col items-center">
+          
+          {!showMcq ? (
+            // Reading Aloud slide
+            <div className="w-full max-w-xl text-center">
+              <h3 className="font-extrabold text-emerald-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                <BookOpen className="w-5 h-5 animate-pulse text-emerald-600" />
+                Read this story out loud for the AI Teacher:
+              </h3>
+              
+              <div className="bg-white border-4 border-emerald-300 rounded-3xl p-6 shadow-md my-4">
+                <p className="text-xl md:text-2xl font-black text-slate-800 leading-relaxed font-sans select-none">
+                  "{referenceStory}"
+                </p>
+              </div>
+            </div>
+          ) : (
+            // Reading MCQ slide
+            <div className="w-full max-w-xl text-center animate-pulse-slow">
+              <h3 className="font-extrabold text-blue-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                <Sparkles className="w-5 h-5 text-blue-500 fill-blue-100" />
+                Question Time! Choose the correct answer:
+              </h3>
+              
+              <div className="bg-white border-4 border-blue-200 rounded-3xl p-5 shadow-sm my-4 text-center">
+                <p className="text-lg md:text-xl font-extrabold text-slate-700">
+                  {mcqQuestion.question}
+                </p>
+              </div>
+
+              {/* Interactive MCQ Choices */}
+              <div className="flex flex-col gap-3.5 mt-6 w-full max-w-md mx-auto text-left">
+                {mcqQuestion.options.map((option, idx) => {
+                  const isSelected = selectedMcqOption === idx;
+                  const isCorrectOption = idx === mcqQuestion.correctIndex;
+                  
+                  let optionClass = "bg-white border-2 border-slate-200 text-slate-700 hover:border-blue-400";
+                  if (mcqAnswered) {
+                    if (isCorrectOption) {
+                      optionClass = "bg-emerald-50 border-2 border-emerald-400 text-emerald-700 scale-105 shadow-md shadow-emerald-100";
+                    } else if (isSelected) {
+                      optionClass = "bg-rose-50 border-2 border-rose-400 text-rose-700 scale-95 opacity-80";
+                    } else {
+                      optionClass = "bg-slate-50 border border-slate-100 text-slate-400 opacity-60";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleMcqSelect(idx)}
+                      disabled={mcqAnswered}
+                      className={`w-full p-4 rounded-2xl font-extrabold text-base transition-all duration-200 cursor-pointer shadow-sm flex items-center justify-between ${optionClass}`}
+                    >
+                      <span>{option}</span>
+                      {mcqAnswered && isCorrectOption && (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-100 shrink-0 ml-2" />
+                      )}
+                      {mcqAnswered && isSelected && !isCorrectOption && (
+                        <XCircle className="w-5 h-5 text-rose-500 fill-rose-100 shrink-0 ml-2" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {stage === "writing" && (
+        <div className="bg-indigo-50 p-6 border-b border-indigo-200 flex flex-col items-center">
+          <div className="w-full max-w-xl text-center">
+            <h3 className="font-extrabold text-indigo-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+              <PenTool className="w-5 h-5 animate-pulse text-indigo-500" />
+              Spelling Task! Type the correct word:
+            </h3>
+
+            <div className="bg-white border-4 border-indigo-200 rounded-3xl p-6 shadow-md my-4 flex flex-col items-center max-w-md mx-auto">
+              <div className="text-5xl mb-3 animate-bounce" style={{ animationDuration: "3s" }}>🐒</div>
+              
+              <p className="text-slate-600 font-extrabold text-sm leading-relaxed mb-4 text-center">
+                Cô giáo AI hỏi: "You said you see a <strong>'monkey'</strong>. Can you type the word <strong>'monkey'</strong> for me?"
+              </p>
+
+              <form onSubmit={handleWritingSubmit} className="w-full">
+                <input 
+                  type="text" 
+                  value={typedWord}
+                  onChange={(e) => setTypedWord(e.target.value)}
+                  disabled={writingSubmitted}
+                  placeholder="Gõ từ 'monkey' vào đây nhé con..."
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-indigo-200 rounded-2xl font-black text-center text-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all shadow-inner uppercase tracking-wider"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!typedWord.trim() || writingSubmitted}
+                  className="w-full mt-4 btn-3d-blue py-3 font-extrabold text-base flex items-center justify-center gap-2 hover:scale-105 disabled:opacity-50"
+                >
+                  Nộp bài viết 🚀
+                </button>
+              </form>
+
+              {writingSubmitted && (
+                <div className="mt-4 animate-bounce-subtle text-xs font-black text-center">
+                  {typedWord.toLowerCase().trim() === "monkey" ? (
+                    <span className="text-emerald-600">🎉 Xuất sắc! Con đã viết chính xác từ này rồi!</span>
+                  ) : (
+                    <span className="text-rose-500">✍️ Con viết gần đúng rồi, cùng xem cô chấm điểm nhé!</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Chat Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "ai" ? "justify-start" : "justify-end"}`}>
@@ -245,45 +952,38 @@ export default function InteractiveTest() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      {stage !== "completed" ? (
-        <div className="p-4 bg-white border-t sticky bottom-0">
-          <div className="flex items-center justify-center gap-4">
-            {!isRecording ? (
-              <button 
-                onClick={startRecording}
-                disabled={isProcessing}
-                className="w-20 h-20 bg-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 hover:bg-green-600 disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-lg"
-              >
-                <Mic className="w-8 h-8 mb-1" />
-                <span className="text-[10px] font-black uppercase">Nói</span>
-              </button>
-            ) : (
-              <button 
-                onClick={stopRecording}
-                className="w-20 h-20 bg-rose-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 animate-pulse shadow-lg shadow-rose-200"
-              >
-                <Square className="w-8 h-8 mb-1" />
-                <span className="text-[10px] font-black uppercase">Dừng</span>
-              </button>
-            )}
-            
-            {/* Optional simple text fallback logic can go here if needed later */}
-          </div>
-          <p className="text-center text-xs text-slate-400 mt-3 font-medium">
-            {isRecording ? "Đang ghi âm... Nhấn Dừng khi nói xong" : "Nhấn nút Nói để trả lời cô giáo"}
-          </p>
+      {/* Microphone recording input triggers */}
+      <div className="p-4 bg-white border-t sticky bottom-0">
+        <div className="flex items-center justify-center gap-4">
+          {!isRecording ? (
+            <button 
+              onClick={startRecording}
+              disabled={isProcessing || showMcq || stage === "writing"}
+              className="w-20 h-20 bg-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 hover:bg-green-600 disabled:opacity-30 disabled:hover:scale-100 transition-all shadow-lg"
+            >
+              <Mic className="w-8 h-8 mb-1" />
+              <span className="text-[10px] font-black uppercase">Nói</span>
+            </button>
+          ) : (
+            <button 
+              onClick={stopRecording}
+              className="w-20 h-20 bg-rose-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 animate-pulse shadow-lg shadow-rose-200"
+            >
+              <Square className="w-8 h-8 mb-1" />
+              <span className="text-[10px] font-black uppercase">Dừng</span>
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="p-8 bg-green-50 text-center border-t border-green-200">
-          <div className="text-4xl mb-2">🎉</div>
-          <h2 className="text-2xl font-black text-green-600 mb-2">Hoàn thành bài thi!</h2>
-          <p className="text-slate-600 font-medium">Bé đã trả lời rất xuất sắc.</p>
-          <Link href="/dashboard" className="inline-block mt-4 px-6 py-3 bg-green-500 text-white rounded-xl font-bold shadow-md hover:bg-green-600">
-            Trở về Dashboard
-          </Link>
-        </div>
-      )}
+        <p className="text-center text-xs text-slate-400 mt-3 font-medium select-none">
+          {stage === "writing" 
+            ? "Con gõ từ vào ô nhập liệu ở trên rồi bấm Nộp bài nhé" 
+            : showMcq 
+            ? "Bé hãy bấm chọn 1 đáp án trắc nghiệm ở trên nhé!" 
+            : isRecording 
+            ? "Đang nghe... Bấm nút Dừng màu Đỏ khi nói xong" 
+            : "Bấm nút Nói màu Xanh để trả lời cô giáo"}
+        </p>
+      </div>
     </div>
   );
 }
