@@ -506,7 +506,7 @@ export default function CambridgeImportPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 <div>
-                  <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="qId">
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="qId">
                     Question ID <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -519,24 +519,24 @@ export default function CambridgeImportPage() {
                     placeholder="Ví dụ: ST_P1_03"
                     className={`w-full rounded-2xl border-2 p-3 text-sm font-extrabold outline-none transition-colors ${
                       isEditing
-                        ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed font-sans"
-                        : "border-slate-200 focus:border-indigo-400 text-slate-700"
+                        ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed font-sans"
+                        : "border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900"
                     }`}
                   />
-                  <span className="text-[10px] text-slate-400 font-bold block mt-1">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">
                     {isEditing ? "Không thể thay đổi Mã ID khi đang chỉnh sửa" : "Mã duy nhất: Cấp độ_Phần_Số câu"}
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="level">
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="level">
                     Cấp độ (Level) <span className="text-rose-500">*</span>
                   </label>
                   <select
                     id="level"
                     value={level}
                     onChange={(e) => setLevel(e.target.value as any)}
-                    className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors bg-white cursor-pointer"
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
                   >
                     <option value="Starters">Starters 🦛</option>
                     <option value="Movers">Movers 🐒</option>
@@ -545,7 +545,7 @@ export default function CambridgeImportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="part">
+                  <label className="block text-slate-700 dark:text-slate-355 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="part">
                     Phần thi (Part) <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -557,7 +557,7 @@ export default function CambridgeImportPage() {
                     value={part}
                     onChange={(e) => setPart(e.target.value)}
                     placeholder="Ví dụ: 1"
-                    className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors"
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
                   />
                 </div>
 
@@ -566,14 +566,14 @@ export default function CambridgeImportPage() {
               {/* Row 2: Type, Custom Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="type">
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="type">
                     Loại bối cảnh học liệu <span className="text-rose-500">*</span>
                   </label>
                   <select
                     id="type"
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors bg-white cursor-pointer"
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
                   >
                     <option value="Scene_Description">Scene Description (Mô tả tranh bối cảnh)</option>
                     <option value="Object_Card">Object Card (Thẻ vật thể bóc tách)</option>
@@ -585,7 +585,7 @@ export default function CambridgeImportPage() {
 
                 {type === "Custom" && (
                   <div>
-                    <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="customType">
+                    <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="customType">
                       Nhập loại bối cảnh tùy chỉnh <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -595,7 +595,7 @@ export default function CambridgeImportPage() {
                       value={customType}
                       onChange={(e) => setCustomType(e.target.value)}
                       placeholder="Ví dụ: Picture_Matching"
-                      className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors animate-pulse"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 animate-pulse"
                     />
                   </div>
                 )}
@@ -604,10 +604,10 @@ export default function CambridgeImportPage() {
               {/* Row 3: Examiner Script */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide" htmlFor="script">
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide" htmlFor="script">
                     Kịch bản câu hỏi của Giám khảo AI <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 font-bold">Giám khảo AI sẽ đọc/phát âm đoạn này</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Giám khảo AI sẽ đọc/phát âm đoạn này</span>
                 </div>
                 <textarea
                   id="script"
@@ -616,13 +616,13 @@ export default function CambridgeImportPage() {
                   value={examinerScript}
                   onChange={(e) => setExaminerScript(e.target.value)}
                   placeholder="Ví dụ: Look at this scene. Here is a family on the beach. Where is the boy? What is the dog doing?"
-                  className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3.5 text-sm font-extrabold text-slate-700 outline-none transition-colors resize-none font-sans"
+                  className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3.5 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 resize-none font-sans"
                 />
               </div>
 
               {/* Row 4: Context Tags */}
               <div>
-                <label className="block text-slate-700 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="tags">
+                <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="tags">
                   Từ khóa bối cảnh (Context Tags)
                 </label>
                 <input
@@ -631,21 +631,21 @@ export default function CambridgeImportPage() {
                   value={contextTags}
                   onChange={(e) => setContextTags(e.target.value)}
                   placeholder="beach, animals, family, swimming, sunny"
-                  className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors"
+                  className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
                 />
-                <span className="text-[10px] text-slate-400 font-bold block mt-1">Cách nhau bằng dấu phẩy (,)</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">Cách nhau bằng dấu phẩy (,)</span>
               </div>
 
               {/* Evaluation criteria: Expected keywords, Target Grammar */}
-              <div className="bg-slate-50/70 border-2 border-slate-100 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-inner">
-                <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+              <div className="bg-slate-50/70 dark:bg-slate-800/40 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-inner">
+                <h4 className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4 text-emerald-500" />
                   Tiêu chí chấm điểm của Trí tuệ Nhân tạo (AI Grading Criteria)
                 </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-slate-600 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="keywords">
+                    <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="keywords">
                       Từ khóa dự kiến có (Expected Keywords)
                     </label>
                     <input
@@ -654,13 +654,13 @@ export default function CambridgeImportPage() {
                       value={expectedKeywords}
                       onChange={(e) => setExpectedKeywords(e.target.value)}
                       placeholder="beach, dog, running, coconut, ball"
-                      className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 bg-white p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors"
                     />
-                    <span className="text-[9px] text-slate-400 font-semibold block mt-1">Từ khóa tối thiểu học viên cần đọc chuẩn</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">Từ khóa tối thiểu học viên cần đọc chuẩn</span>
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="grammar">
+                    <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="grammar">
                       Cấu trúc đích (Target Grammar)
                     </label>
                     <input
@@ -669,9 +669,9 @@ export default function CambridgeImportPage() {
                       value={targetGrammar}
                       onChange={(e) => setTargetGrammar(e.target.value)}
                       placeholder="present continuous, there is, there are, behind, under"
-                      className="w-full rounded-2xl border-2 border-slate-200 focus:border-indigo-400 bg-white p-3 text-sm font-extrabold text-slate-700 outline-none transition-colors"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors"
                     />
-                    <span className="text-[9px] text-slate-400 font-semibold block mt-1">Các giới từ, thì ngữ pháp ưu tiên để AI phát hiện</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">Các giới từ, thì ngữ pháp ưu tiên để AI phát hiện</span>
                   </div>
                 </div>
               </div>
@@ -949,10 +949,10 @@ export default function CambridgeImportPage() {
               <p className="text-xs font-bold text-slate-400 max-w-xs mt-1">Admin hãy sử dụng form bên trên tải ảnh cắt PDF để bổ sung câu hỏi nhé! 🚀</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+            <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 font-extrabold">
+                  <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-400 font-extrabold">
                     <th className="py-4 px-4 text-xs font-black uppercase text-center w-16">STT</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-20">Ảnh bóc tách</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-24">Mã ID</th>
@@ -964,17 +964,17 @@ export default function CambridgeImportPage() {
                     <th className="py-4 px-4 text-xs font-black uppercase text-center w-36">Hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-bold text-slate-600">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold text-slate-600 dark:text-slate-350">
                   {filteredQuestions.map((q, idx) => {
                     return (
-                      <tr key={q._id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={q._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                         
                         <td className="py-4 px-4 text-center font-extrabold text-slate-400 w-16">
                           {idx + 1}
                         </td>
                         
                         <td className="py-4 px-4 w-20">
-                          <div className="w-14 h-14 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex items-center justify-center group relative cursor-zoom-in">
+                          <div className="w-14 h-14 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex items-center justify-center group relative cursor-zoom-in">
                             <img
                               src={q.imagePath}
                               alt={q.id}
@@ -992,7 +992,7 @@ export default function CambridgeImportPage() {
                           </div>
                         </td>
                         
-                        <td className="py-4 px-4 font-black text-slate-800 uppercase w-24">
+                        <td className="py-4 px-4 font-black text-slate-800 dark:text-slate-255 uppercase w-24">
                           {q.id}
                         </td>
 
@@ -1002,23 +1002,23 @@ export default function CambridgeImportPage() {
                           </span>
                         </td>
 
-                        <td className="py-4 px-4 text-center font-extrabold text-slate-800 w-16">
+                        <td className="py-4 px-4 text-center font-extrabold text-slate-800 dark:text-slate-255 w-16">
                           {q.part}
                         </td>
 
-                        <td className="py-4 px-4 text-slate-500 w-32 truncate max-w-[130px]" title={q.type || ""}>
+                        <td className="py-4 px-4 text-slate-500 dark:text-slate-400 w-32 truncate max-w-[130px]" title={q.type || ""}>
                           {(q.type || "").replace(/_/g, " ")}
                         </td>
 
-                        <td className="py-4 px-4 text-slate-700 font-medium leading-relaxed max-w-xs md:max-w-sm truncate" title={q.examinerScript}>
+                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xs md:max-w-sm truncate" title={q.examinerScript}>
                           "{q.examinerScript}"
                         </td>
 
-                        <td className="py-4 px-4 w-48 text-[10px] leading-relaxed text-slate-400 font-sans">
+                        <td className="py-4 px-4 w-48 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 font-sans">
                           {q.evaluationCriteria.expectedKeywords.length > 0 && (
                             <div>
                               <strong className="text-slate-500">Keywords:</strong>{" "}
-                              <span className="text-emerald-600 font-bold bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
                                 {q.evaluationCriteria.expectedKeywords.join(", ")}
                               </span>
                             </div>
@@ -1026,7 +1026,7 @@ export default function CambridgeImportPage() {
                           {q.evaluationCriteria.targetGrammar.length > 0 && (
                             <div className="mt-1">
                               <strong className="text-slate-500">Grammar:</strong>{" "}
-                              <span className="text-indigo-600 font-bold bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">
+                              <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">
                                 {q.evaluationCriteria.targetGrammar.join(", ")}
                               </span>
                             </div>

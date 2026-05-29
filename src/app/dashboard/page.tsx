@@ -266,28 +266,28 @@ export default function DashboardPage() {
               </h2>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 text-center">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl p-4 text-center">
                   <BookOpen className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                  <span className="text-3xl font-black text-blue-600 block">{totalAssessments}</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Bài đã làm</span>
+                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400 block">{totalAssessments}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Bài đã làm</span>
                 </div>
 
-                <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-center">
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 text-center">
                   <Award className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                  <span className="text-3xl font-black text-emerald-600 block">{avgScore}</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Điểm trung bình</span>
+                  <span className="text-3xl font-black text-emerald-600 dark:text-emerald-450 block">{avgScore}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Điểm trung bình</span>
                 </div>
 
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-center">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
                   <Star className="w-8 h-8 text-amber-500 mx-auto mb-2 fill-amber-400" />
-                  <span className="text-3xl font-black text-amber-600 block">{avgStars}</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Sao trung bình</span>
+                  <span className="text-3xl font-black text-amber-600 dark:text-amber-405 block">{avgStars}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Sao trung bình</span>
                 </div>
 
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-4 text-center">
+                <div className="bg-purple-50 dark:bg-purple-950/20 border-2 border-purple-200 dark:border-purple-800 rounded-2xl p-4 text-center">
                   <span className="text-3xl block mb-1">📚</span>
-                  <span className="text-3xl font-black text-purple-600 block">{Object.keys(levelCounts).length}</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Level đã học</span>
+                  <span className="text-3xl font-black text-purple-600 dark:text-purple-400 block">{Object.keys(levelCounts).length}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Level đã học</span>
                 </div>
               </div>
 
@@ -295,7 +295,11 @@ export default function DashboardPage() {
                 {Object.entries(levelCounts).map(([level, count]) => (
                   <div
                     key={level}
-                    className={`px-4 py-2 rounded-xl border-2 font-bold text-sm flex items-center gap-2 ${levelColor[level] || "bg-slate-100 text-slate-600 border-slate-300"}`}
+                    className={`px-4 py-2 rounded-xl border-2 font-bold text-sm flex items-center gap-2 ${
+                      level === "Starters" ? "bg-pink-100 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border-pink-300 dark:border-pink-800" :
+                      level === "Movers" ? "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800" :
+                      "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800"
+                    }`}
                   >
                     <span className="text-lg">{levelAnimal[level] || "📖"}</span>
                     <span>{level}: {count} bài</span>
@@ -314,76 +318,76 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 
                 {/* Speaking */}
-                <div className="bg-pink-50/50 border-2 border-pink-200 rounded-2xl p-4 text-center">
-                  <span className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-pink-500 mx-auto border border-pink-100 shadow-sm mb-3">
+                <div className="bg-pink-50/50 dark:bg-pink-950/20 border-2 border-pink-200 dark:border-pink-800 rounded-2xl p-4 text-center">
+                  <span className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-pink-500 mx-auto border border-pink-100 dark:border-pink-900 shadow-sm mb-3">
                     <Mic className="w-5 h-5" />
                   </span>
-                  <h4 className="text-sm font-black text-pink-700 uppercase">Speaking (Nói)</h4>
-                  <p className="text-[10px] text-slate-400 font-extrabold mt-0.5">Số bài: {skillStats.Speaking.count}</p>
+                  <h4 className="text-sm font-black text-pink-700 dark:text-pink-400 uppercase">Speaking (Nói)</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold mt-0.5">Số bài: {skillStats.Speaking.count}</p>
                   
                   <div className="mt-4">
-                    <span className="text-2xl font-black text-pink-600 block">
+                    <span className="text-2xl font-black text-pink-600 dark:text-pink-400 block">
                       {skillStats.Speaking.count > 0 ? Math.round(skillStats.Speaking.totalScore / skillStats.Speaking.count) : 0}
-                      <span className="text-xs text-slate-400 font-normal"> /100</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal"> /100</span>
                     </span>
-                    <span className="text-xs font-bold text-slate-500 block mt-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mt-1">
                       ⭐ {skillStats.Speaking.count > 0 ? (skillStats.Speaking.totalStars / skillStats.Speaking.count).toFixed(1) : "0.0"} sao
                     </span>
                   </div>
                 </div>
 
                 {/* Listening */}
-                <div className="bg-blue-50/50 border-2 border-blue-200 rounded-2xl p-4 text-center">
-                  <span className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 mx-auto border border-blue-100 shadow-sm mb-3">
+                <div className="bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl p-4 text-center">
+                  <span className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-blue-500 mx-auto border border-blue-100 dark:border-blue-900 shadow-sm mb-3">
                     <Headphones className="w-5 h-5" />
                   </span>
-                  <h4 className="text-sm font-black text-blue-700 uppercase">Listening (Nghe)</h4>
-                  <p className="text-[10px] text-slate-400 font-extrabold mt-0.5">Số bài: {skillStats.Listening.count}</p>
+                  <h4 className="text-sm font-black text-blue-700 dark:text-blue-400 uppercase">Listening (Nghe)</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold mt-0.5">Số bài: {skillStats.Listening.count}</p>
                   
                   <div className="mt-4">
-                    <span className="text-2xl font-black text-blue-600 block">
+                    <span className="text-2xl font-black text-blue-600 dark:text-blue-400 block">
                       {skillStats.Listening.count > 0 ? Math.round(skillStats.Listening.totalScore / skillStats.Listening.count) : 0}
-                      <span className="text-xs text-slate-400 font-normal"> /100</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal"> /100</span>
                     </span>
-                    <span className="text-xs font-bold text-slate-500 block mt-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mt-1">
                       ⭐ {skillStats.Listening.count > 0 ? (skillStats.Listening.totalStars / skillStats.Listening.count).toFixed(1) : "0.0"} sao
                     </span>
                   </div>
                 </div>
 
                 {/* Reading */}
-                <div className="bg-emerald-50/50 border-2 border-emerald-200 rounded-2xl p-4 text-center">
-                  <span className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 mx-auto border border-emerald-100 shadow-sm mb-3">
+                <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 text-center">
+                  <span className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-emerald-500 mx-auto border border-emerald-100 dark:border-emerald-900 shadow-sm mb-3">
                     <BookOpen className="w-5 h-5" />
                   </span>
-                  <h4 className="text-sm font-black text-emerald-700 uppercase">Reading (Đọc)</h4>
-                  <p className="text-[10px] text-slate-400 font-extrabold mt-0.5">Số bài: {skillStats.Reading.count}</p>
+                  <h4 className="text-sm font-black text-emerald-700 dark:text-emerald-400 uppercase">Reading (Đọc)</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold mt-0.5">Số bài: {skillStats.Reading.count}</p>
                   
                   <div className="mt-4">
-                    <span className="text-2xl font-black text-emerald-600 block">
+                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-450 block">
                       {skillStats.Reading.count > 0 ? Math.round(skillStats.Reading.totalScore / skillStats.Reading.count) : 0}
-                      <span className="text-xs text-slate-400 font-normal"> /100</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal"> /100</span>
                     </span>
-                    <span className="text-xs font-bold text-slate-500 block mt-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mt-1">
                       ⭐ {skillStats.Reading.count > 0 ? (skillStats.Reading.totalStars / skillStats.Reading.count).toFixed(1) : "0.0"} sao
                     </span>
                   </div>
                 </div>
 
                 {/* Writing */}
-                <div className="bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-4 text-center">
-                  <span className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 mx-auto border border-amber-100 shadow-sm mb-3">
+                <div className="bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
+                  <span className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-amber-500 mx-auto border border-amber-100 dark:border-amber-900 shadow-sm mb-3">
                     <PenTool className="w-5 h-5" />
                   </span>
-                  <h4 className="text-sm font-black text-amber-700 uppercase">Writing (Viết)</h4>
-                  <p className="text-[10px] text-slate-400 font-extrabold mt-0.5">Số bài: {skillStats.Writing.count}</p>
+                  <h4 className="text-sm font-black text-amber-700 dark:text-amber-405 uppercase">Writing (Viết)</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold mt-0.5">Số bài: {skillStats.Writing.count}</p>
                   
                   <div className="mt-4">
-                    <span className="text-2xl font-black text-amber-600 block">
+                    <span className="text-2xl font-black text-amber-600 dark:text-amber-405 block">
                       {skillStats.Writing.count > 0 ? Math.round(skillStats.Writing.totalScore / skillStats.Writing.count) : 0}
-                      <span className="text-xs text-slate-400 font-normal"> /100</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal"> /100</span>
                     </span>
-                    <span className="text-xs font-bold text-slate-500 block mt-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mt-1">
                       ⭐ {skillStats.Writing.count > 0 ? (skillStats.Writing.totalStars / skillStats.Writing.count).toFixed(1) : "0.0"} sao
                     </span>
                   </div>
@@ -430,7 +434,7 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b-2 border-slate-200 text-slate-400">
+                    <tr className="border-b-2 border-slate-200 dark:border-slate-800 text-slate-400">
                       <th className="text-left py-3 px-2 text-xs font-black uppercase">Ngày</th>
                       <th className="text-left py-3 px-2 text-xs font-black uppercase">Kỹ năng</th>
                       <th className="text-left py-3 px-2 text-xs font-black uppercase">Cấp độ</th>
@@ -444,10 +448,10 @@ export default function DashboardPage() {
                     {assessments.map((a) => {
                       const s = a.skill || "Speaking";
                       const badgeColor =
-                        s === "Listening" ? "bg-blue-50 border-blue-200 text-blue-600" :
-                        s === "Reading" ? "bg-emerald-50 border-emerald-200 text-emerald-600" :
-                        s === "Writing" ? "bg-amber-50 border-amber-200 text-amber-600" :
-                        "bg-pink-50 border-pink-200 text-pink-600";
+                        s === "Listening" ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" :
+                        s === "Reading" ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400" :
+                        s === "Writing" ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400" :
+                        "bg-pink-50 dark:bg-pink-950/30 border-pink-200 dark:border-pink-800 text-pink-600 dark:text-pink-400";
 
                       return (
                         <tr

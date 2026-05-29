@@ -370,61 +370,63 @@ export default function AdaptiveTestPage() {
           {(currentQuestion.skill === "Listening" || currentQuestion.skill === "Reading") && (
             <div className="border-t border-slate-100 pt-6">
               {currentQuestion.skill === "Listening" ? (
-                 <div className="text-center mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                   {/* Voice Accent Selector */}
-                   <div className="mt-1 mb-4 bg-white/80 border border-blue-100 rounded-2xl p-2.5 inline-block mx-auto max-w-full">
-                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider block mb-1.5 text-center">
-                       Chọn accent của cô giáo AI:
-                     </span>
-                     <div className="flex flex-wrap justify-center gap-1.5">
-                       {voices.map((v) => {
-                         const isSelected = selectedVoice === v.code;
-                         return (
-                           <button
-                             key={v.code}
-                             onClick={() => handleVoiceChange(v.code)}
-                             disabled={ttsPlaying || isProcessing}
-                             className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
-                               isSelected
-                                 ? "bg-blue-50 border-blue-400 text-blue-600 font-extrabold scale-105"
-                                 : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                             }`}
-                           >
-                             {v.name}
-                           </button>
-                         );
-                       })}
-                     </div>
+               <div className="text-center mb-6 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                 {/* Voice Accent Selector */}
+                 <div className="mt-1 mb-4 bg-white/80 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 rounded-2xl p-2.5 inline-block mx-auto max-w-full">
+                   <span className="text-[10px] font-black text-blue-400 dark:text-blue-550 uppercase tracking-wider block mb-1.5 text-center">
+                     Chọn accent của cô giáo AI:
+                   </span>
+                   <div className="flex flex-wrap justify-center gap-1.5">
+                     {voices.map((v) => {
+                       const isSelected = selectedVoice === v.code;
+                       return (
+                         <button
+                           key={v.code}
+                           onClick={() => handleVoiceChange(v.code)}
+                           disabled={ttsPlaying || isProcessing}
+                           className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
+                             isSelected
+                               ? "bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-700 text-blue-600 dark:text-blue-400 font-extrabold scale-105"
+                               : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-655"
+                           }`}
+                         >
+                           {v.name}
+                         </button>
+                       );
+                     })}
                    </div>
-
-                   <button onClick={playTTS} disabled={ttsPlaying || isProcessing} className="btn-3d-blue px-6 py-3.5 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 mx-auto">
-                     <Volume2 className="w-5 h-5" />
-                     {ttsPlaying ? "Đang phát âm thanh... 🔊" : "BẤM ĐỂ NGHE 🔊"}
-                   </button>
                  </div>
-              ) : (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 text-center">
-                  <p className="text-lg font-extrabold text-slate-800 font-serif">"{currentQuestion.prompt}"</p>
-                </div>
-              )}
-              
-              <p className="text-slate-800 font-extrabold text-sm mb-4">❓ {currentQuestion.questionText}</p>
-              
-              <div className="grid grid-cols-1 gap-3 mb-6">
-                {currentQuestion.options?.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedOption(opt)}
-                    disabled={isProcessing}
-                    className={`w-full text-left p-4 rounded-2xl border-2 font-extrabold text-sm transition-all flex justify-between ${
-                      selectedOption === opt ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {opt}
-                    {selectedOption === opt && <CheckCircle className="w-5 h-5 text-blue-500" />}
-                  </button>
-                ))}
+
+                 <button onClick={playTTS} disabled={ttsPlaying || isProcessing} className="btn-3d-blue px-6 py-3.5 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 mx-auto">
+                   <Volume2 className="w-5 h-5" />
+                   {ttsPlaying ? "Đang phát âm thanh... 🔊" : "BẤM ĐỂ NGHE 🔊"}
+                 </button>
+               </div>
+            ) : (
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 mb-6 text-center">
+                <p className="text-lg font-extrabold text-slate-800 dark:text-slate-100 font-serif">"{currentQuestion.prompt}"</p>
               </div>
+            )}
+            
+            <p className="text-slate-800 dark:text-slate-200 font-extrabold text-sm mb-4">❓ {currentQuestion.questionText}</p>
+            
+            <div className="grid grid-cols-1 gap-3 mb-6">
+              {currentQuestion.options?.map((opt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedOption(opt)}
+                  disabled={isProcessing}
+                  className={`w-full text-left p-4 rounded-2xl border-2 font-extrabold text-sm transition-all flex justify-between ${
+                    selectedOption === opt 
+                      ? "bg-blue-50 dark:bg-blue-950/30 border-blue-500 dark:border-blue-700 text-blue-700 dark:text-blue-300" 
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-750 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  {opt}
+                  {selectedOption === opt && <CheckCircle className="w-5 h-5 text-blue-500" />}
+                </button>
+              ))}
+            </div>
 
               <button
                 onClick={handleChoiceSubmit}

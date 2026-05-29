@@ -46,6 +46,32 @@ export default function InteractiveTest() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const voices = [
+    { code: "en-US-AriaNeural", name: "Mỹ (Nữ) 🇺🇸" },
+    { code: "en-US-GuyNeural", name: "Mỹ (Nam) 🇺🇸" },
+    { code: "en-GB-SoniaNeural", name: "Anh (Nữ) 🇬🇧" },
+    { code: "en-GB-RyanNeural", name: "Anh (Nam) 🇬🇧" },
+    { code: "en-AU-NatashaNeural", name: "Úc (Nữ) 🇦🇺" },
+  ];
+
+  const [selectedVoice, setSelectedVoice] = useState<string>("en-US-AriaNeural");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("preferred_accent_voice");
+      if (saved) {
+        setSelectedVoice(saved);
+      }
+    }
+  }, []);
+
+  const handleVoiceChange = (voiceCode: string) => {
+    setSelectedVoice(voiceCode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("preferred_accent_voice", voiceCode);
+    }
+  };
   
   // Custom Kid States collected during the test
   const [kidName, setKidName] = useState("Con");
@@ -131,7 +157,7 @@ export default function InteractiveTest() {
 
   const playTTS = (text: string) => {
     const cleanText = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
-    const url = `/api/tts?text=${encodeURIComponent(cleanText.trim())}`;
+    const url = `/api/tts?text=${encodeURIComponent(cleanText.trim())}&voice=${selectedVoice}`;
     if (audioRef.current) {
       audioRef.current.src = url;
       audioRef.current.play().catch(e => console.error("Lỗi phát audio:", e));
@@ -491,9 +517,9 @@ export default function InteractiveTest() {
   };
 
   const getOverallLevel = (speakingScore: number) => {
-    if (speakingScore >= 85) return { name: "Flyers (A2)", mascot: "🦁", title: "Lion Dũng Cảm", theme: "bg-blue-50 border-blue-200 text-blue-700", desc: "Wow! Bé có năng lực Tiếng Anh thật kinh ngạc! Con phát âm cực kỳ chuẩn xác, nghe hiểu nhanh nhạy và viết chính tả hoàn hảo. Con hoàn toàn sẵn sàng chinh phục các kỳ thi chuẩn quốc tế Flyers và đạt điểm tuyệt đối. Cô rất tự hào về con! 🦁🏆" };
-    if (speakingScore >= 60) return { name: "Movers (A1)", mascot: "🐒", title: "Monkey Thông Minh", theme: "bg-amber-50 border-amber-200 text-amber-700", desc: "Chúc mừng bé xuất sắc đạt cấp độ Movers! Con có vốn từ vựng tốt, miêu tả tranh sinh động và đọc câu chuyện rất lưu loát. Hãy rèn luyện thêm ngữ pháp và chính tả khi viết câu để chuẩn bị cho nấc thang Flyers đầy thú vị tiếp theo nhé! 🐒👑" };
-    return { name: "Starters (Pre-A1)", mascot: "🦛", title: "Hippo Dễ Thương", theme: "bg-pink-50 border-pink-200 text-pink-700", desc: "Bé ơi, con đã rất dũng cảm hoàn thành bài thi! Con có phản xạ nghe nói cơ bản, nhận diện được các từ quen thuộc. Cùng cô giáo AI rèn luyện thêm vốn từ vựng và tự tin bật âm để nhanh chóng chinh phục nấc thang Movers nhé! Cô chúc mừng con! 🦛🌟" };
+    if (speakingScore >= 85) return { name: "Flyers (A2)", mascot: "🦁", title: "Lion Dũng Cảm", theme: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300", desc: "Wow! Bé có năng lực Tiếng Anh thật kinh ngạc! Con phát âm cực kỳ chuẩn xác, nghe hiểu nhanh nhạy và viết chính tả hoàn hảo. Con hoàn toàn sẵn sàng chinh phục các kỳ thi chuẩn quốc tế Flyers và đạt điểm tuyệt đối. Cô rất tự hào về con! 🦁🏆" };
+    if (speakingScore >= 60) return { name: "Movers (A1)", mascot: "🐒", title: "Monkey Thông Minh", theme: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300", desc: "Chúc mừng bé xuất sắc đạt cấp độ Movers! Con có vốn từ vựng tốt, miêu tả tranh sinh động và đọc câu chuyện rất lưu loát. Hãy rèn luyện thêm ngữ pháp và chính tả khi viết câu để chuẩn bị cho nấc thang Flyers đầy thú vị tiếp theo nhé! 🐒👑" };
+    return { name: "Starters (Pre-A1)", mascot: "🦛", title: "Hippo Dễ Thương", theme: "bg-pink-50 dark:bg-pink-950/30 border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300", desc: "Bé ơi, con đã rất dũng cảm hoàn thành bài thi! Con có phản xạ nghe nói cơ bản, nhận diện được các từ quen thuộc. Cùng cô giáo AI rèn luyện thêm vốn từ vựng và tự tin bật âm để nhanh chóng chinh phục nấc thang Movers nhé! Cô chúc mừng con! 🦛🌟" };
   };
 
   const roadmapTasks = () => {
@@ -653,7 +679,7 @@ export default function InteractiveTest() {
                 <span className="text-3xl font-black block mt-1 tracking-tight font-sans">
                   {overallLevelInfo.name}
                 </span>
-                <span className="inline-block mt-3 bg-white/70 px-3 py-1 rounded-xl text-xs font-bold border border-current">
+                <span className="inline-block mt-3 bg-white/70 dark:bg-slate-800/70 px-3 py-1 rounded-xl text-xs font-bold border border-current">
                   {overallLevelInfo.title}
                 </span>
               </div>
@@ -682,10 +708,10 @@ export default function InteractiveTest() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                 {/* Speaking */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-700">🎤 Speaking (Kỹ năng Nói)</h4>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.speaking}/100</p>
+                    <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">🎤 Speaking (Kỹ năng Nói)</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.speaking}/100</p>
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -695,10 +721,10 @@ export default function InteractiveTest() {
                 </div>
 
                 {/* Listening */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-700">🎧 Listening (Kỹ năng Nghe)</h4>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.listening}/100</p>
+                    <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">🎧 Listening (Kỹ năng Nghe)</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.listening}/100</p>
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -708,10 +734,10 @@ export default function InteractiveTest() {
                 </div>
 
                 {/* Reading */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-700">📖 Reading (Kỹ năng Đọc)</h4>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.reading}/100</p>
+                    <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">📖 Reading (Kỹ năng Đọc)</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.reading}/100</p>
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -721,10 +747,10 @@ export default function InteractiveTest() {
                 </div>
 
                 {/* Writing */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-700">✍️ Writing (Kỹ năng Viết)</h4>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.writing}/100</p>
+                    <h4 className="font-extrabold text-sm text-slate-700 dark:text-slate-200">✍️ Writing (Kỹ năng Viết)</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-400 font-bold mt-0.5">Điểm quy đổi: {scores.writing}/100</p>
                   </div>
                   <div className="flex gap-1">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -741,15 +767,15 @@ export default function InteractiveTest() {
           <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-6 md:p-8 shadow-xl">
             <div className="flex flex-col sm:flex-row items-start gap-5">
               
-              <div className="shrink-0 flex sm:flex-col items-center gap-2 self-center sm:self-start bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 w-full sm:w-28 text-center shadow-inner">
+              <div className="shrink-0 flex sm:flex-col items-center gap-2 self-center sm:self-start bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-750 rounded-2xl p-4 w-full sm:w-28 text-center shadow-inner">
                 <span className="text-5xl animate-bounce" style={{ animationDuration: "2.5s" }}>
                   {overallLevelInfo.mascot}
                 </span>
                 <div>
-                  <p className="text-[11px] font-black text-slate-700 leading-tight">
+                  <p className="text-slate-700 dark:text-slate-200 leading-tight font-black">
                     {overallLevelInfo.title}
                   </p>
-                  <p className="text-[9px] font-extrabold text-slate-400 mt-0.5">Cô giáo AI</p>
+                  <p className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 mt-0.5">Cô giáo AI</p>
                 </div>
               </div>
 
@@ -772,22 +798,22 @@ export default function InteractiveTest() {
 
           {/* Learning Roadmap checklist */}
           <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-6 md:p-8 shadow-xl">
-            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-4 border-b pb-4">
+            <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4 border-b dark:border-slate-800 pb-4">
               <Compass className="w-6 h-6 text-blue-500 animate-spin" style={{ animationDuration: "8s" }} />
               Lộ trình rèn luyện nâng cao năng lực 🚀
             </h3>
             
-            <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
+            <p className="text-xs text-slate-500 dark:text-slate-450 font-bold leading-relaxed mb-6">
               Dựa trên kết quả thi đầu vào, cô giáo AI đã chuẩn hóa riêng cho con 3 bài tập nhỏ luyện tập tại nhà:
             </p>
 
             <div className="space-y-4">
               {roadmapTasks().map((task, index) => (
-                <div key={index} className="border-2 border-blue-50 bg-white rounded-2xl p-4 flex items-start gap-3 shadow-sm hover:border-blue-200 transition-colors">
-                  <span className="inline-block text-xs font-black bg-blue-100/60 text-blue-600 px-2 py-0.5 rounded-md mr-2 font-mono shrink-0">
+                <div key={index} className="border-2 border-blue-50 dark:border-slate-800 bg-white dark:bg-slate-850 rounded-2xl p-4 flex items-start gap-3 shadow-sm hover:border-blue-200 dark:hover:border-slate-750 transition-colors">
+                  <span className="inline-block text-xs font-black bg-blue-100/60 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md mr-2 font-mono shrink-0">
                     Bài {index + 1}
                   </span>
-                  <div className="text-sm font-extrabold leading-relaxed text-slate-700">
+                  <div className="text-sm font-extrabold leading-relaxed text-slate-700 dark:text-slate-200">
                     {task}
                   </div>
                 </div>
@@ -898,20 +924,39 @@ export default function InteractiveTest() {
           />
         </div>
 
-        <Link href="/" className="px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs md:text-sm hover:bg-slate-200 dark:hover:bg-slate-700">
-          Thoát
-        </Link>
+        <div className="flex items-center gap-2.5">
+          {/* AI Accent Selector */}
+          <div className="relative">
+            <select
+              value={selectedVoice}
+              onChange={(e) => handleVoiceChange(e.target.value)}
+              className="appearance-none bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/50 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black rounded-xl pl-8 pr-7 py-2 transition-all shadow-sm focus:outline-none cursor-pointer"
+            >
+              {voices.map((v) => (
+                <option key={v.code} value={v.code} className="dark:bg-slate-900 dark:text-slate-200">
+                  {v.name.split(" ")[0]}
+                </option>
+              ))}
+            </select>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs pointer-events-none">🌐</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] pointer-events-none opacity-60">▼</span>
+          </div>
+
+          <Link href="/" className="px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs md:text-sm hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700 shadow-sm transition-colors">
+            Thoát
+          </Link>
+        </div>
       </div>
 
       {/* Context Area - Dynamically based on current stage */}
       {stage === "picture" && currentQuestion && (
-        <div className="bg-amber-50 p-4 border-b border-amber-200 flex flex-col items-center select-none">
-          <h3 className="font-extrabold text-amber-700 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider text-center">
+        <div className="bg-amber-50 dark:bg-amber-950/20 p-4 border-b border-amber-200 dark:border-amber-900/50 flex flex-col items-center select-none">
+          <h3 className="font-extrabold text-amber-700 dark:text-amber-300 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider text-center">
             <ImageIcon className="w-5 h-5 shrink-0 animate-bounce" /> 
             [Picture {pictureIndex + 1}/2] Look at this picture and describe what you see:
           </h3>
           {currentQuestion.imagePath && (
-            <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-md border-4 border-white">
+            <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-md border-4 border-white dark:border-slate-800">
               <Image 
                 src={currentQuestion.imagePath} 
                 alt="Test image" 
@@ -926,7 +971,7 @@ export default function InteractiveTest() {
           {keywordsMentioned.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               {keywordsMentioned.map((word) => (
-                <span key={word} className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 animate-bounce-subtle">
+                <span key={word} className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 animate-bounce-subtle">
                   ✨ {word}
                 </span>
               ))}
@@ -936,18 +981,18 @@ export default function InteractiveTest() {
       )}
 
       {stage === "reading" && (
-        <div className="bg-emerald-50 p-6 border-b border-emerald-200 flex flex-col items-center">
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 border-b border-emerald-200 dark:border-emerald-900/50 flex flex-col items-center">
           
           {!showMcq ? (
             // Reading Aloud slide
             <div className="w-full max-w-xl text-center">
-              <h3 className="font-extrabold text-emerald-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+              <h3 className="font-extrabold text-emerald-800 dark:text-emerald-300 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
                 <BookOpen className="w-5 h-5 animate-pulse text-emerald-600" />
                 Read this story out loud for the AI Teacher:
               </h3>
               
-              <div className="bg-white border-4 border-emerald-300 rounded-3xl p-6 shadow-md my-4">
-                <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed font-sans select-none">
+              <div className="bg-white dark:bg-slate-900 border-4 border-emerald-300 dark:border-emerald-800 rounded-3xl p-6 shadow-md my-4">
+                <p className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed font-sans select-none">
                   "{activeStory}"
                 </p>
               </div>
@@ -955,13 +1000,13 @@ export default function InteractiveTest() {
           ) : (
             // Reading MCQ slide
             <div className="w-full max-w-xl text-center animate-pulse-slow">
-              <h3 className="font-extrabold text-blue-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+              <h3 className="font-extrabold text-blue-800 dark:text-blue-300 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
                 <Sparkles className="w-5 h-5 text-blue-500 fill-blue-100" />
                 Question Time! Choose the correct answer:
               </h3>
               
-              <div className="bg-white border-4 border-blue-200 rounded-3xl p-5 shadow-sm my-4 text-center">
-                <p className="text-lg md:text-xl font-extrabold text-slate-700">
+              <div className="bg-white dark:bg-slate-900 border-4 border-blue-200 dark:border-blue-800 rounded-3xl p-5 shadow-sm my-4 text-center">
+                <p className="text-lg md:text-xl font-extrabold text-slate-700 dark:text-slate-200">
                   {activeMcq.question}
                 </p>
               </div>
@@ -972,14 +1017,14 @@ export default function InteractiveTest() {
                   const isSelected = selectedMcqOption === idx;
                   const isCorrectOption = idx === activeMcq.correctIndex;
                   
-                  let optionClass = "bg-white border-2 border-slate-200 text-slate-700 hover:border-blue-400";
+                  let optionClass = "bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-blue-400 dark:hover:border-blue-500";
                   if (mcqAnswered) {
                     if (isCorrectOption) {
-                      optionClass = "bg-emerald-50 border-2 border-emerald-400 text-emerald-700 scale-105 shadow-md shadow-emerald-100";
+                      optionClass = "bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 scale-105 shadow-md shadow-emerald-100 dark:shadow-emerald-950/20";
                     } else if (isSelected) {
-                      optionClass = "bg-rose-50 border-2 border-rose-400 text-rose-700 scale-95 opacity-80";
+                      optionClass = "bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-400 dark:border-rose-500 text-rose-700 dark:text-rose-300 scale-95 opacity-80";
                     } else {
-                      optionClass = "bg-slate-50 border border-slate-100 text-slate-400 opacity-60";
+                      optionClass = "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 text-slate-400 dark:text-slate-500 opacity-60";
                     }
                   }
 
@@ -1008,19 +1053,19 @@ export default function InteractiveTest() {
       )}
 
       {stage === "writing" && (
-        <div className="bg-indigo-50 p-6 border-b border-indigo-200 flex flex-col items-center">
+        <div className="bg-indigo-50 dark:bg-indigo-950/20 p-6 border-b border-indigo-200 dark:border-indigo-900/50 flex flex-col items-center">
           <div className="w-full max-w-xl text-center">
-            <h3 className="font-extrabold text-indigo-800 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+            <h3 className="font-extrabold text-indigo-800 dark:text-indigo-300 mb-3 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
               <PenTool className="w-5 h-5 animate-pulse text-indigo-500" />
               Spelling Task [{writingTaskIndex + 1}/2]! Type the correct word:
             </h3>
 
-            <div className="bg-white border-4 border-indigo-200 rounded-3xl p-6 shadow-md my-4 flex flex-col items-center max-w-md mx-auto">
+            <div className="bg-white dark:bg-slate-900 border-4 border-indigo-200 dark:border-indigo-800 rounded-3xl p-6 shadow-md my-4 flex flex-col items-center max-w-md mx-auto">
               <div className="text-5xl mb-3 animate-bounce" style={{ animationDuration: "3s" }}>
                 {writingTaskIndex === 0 ? "🐒" : "🍌"}
               </div>
               
-              <p className="text-slate-600 font-extrabold text-sm leading-relaxed mb-4 text-center">
+              <p className="text-slate-600 dark:text-slate-350 font-extrabold text-sm leading-relaxed mb-4 text-center">
                 Cô giáo AI hỏi: "{activeSpelling[writingTaskIndex].prompt}"
               </p>
 
@@ -1031,7 +1076,7 @@ export default function InteractiveTest() {
                   onChange={(e) => setTypedWord(e.target.value)}
                   disabled={writingSubmitted}
                   placeholder="Gõ câu trả lời của con tại đây..."
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-indigo-200 rounded-2xl font-black text-center text-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all shadow-inner uppercase tracking-wider"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-800 rounded-2xl font-black text-center text-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-850 transition-all shadow-inner uppercase tracking-wider"
                   autoComplete="off"
                   autoCorrect="off"
                 />
@@ -1048,9 +1093,9 @@ export default function InteractiveTest() {
               {writingSubmitted && (
                 <div className="mt-4 animate-bounce-subtle text-xs font-black text-center">
                   {typedWord.toLowerCase().trim() === activeSpelling[writingTaskIndex].correctWord.toLowerCase().trim() ? (
-                    <span className="text-emerald-600">🎉 Xuất sắc! Con đã viết chính xác rồi!</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">🎉 Xuất sắc! Con đã viết chính xác rồi!</span>
                   ) : (
-                    <span className="text-rose-500">✍️ Con viết gần đúng rồi, cô đang ghi nhận điểm nhé!</span>
+                    <span className="text-rose-500 dark:text-rose-400">✍️ Con viết gần đúng rồi, cô đang ghi nhận điểm nhé!</span>
                   )}
                 </div>
               )}

@@ -191,10 +191,10 @@ export default function ResultPage({ params }: ResultPageProps) {
   // Layout details
   const medalMascot = data.stars === 5 ? "👑 KIM CƯƠNG" : data.stars === 4 ? "🥇 VÀNG" : data.stars === 3 ? "🥈 BẠC" : "🥉 ĐỒNG";
   const medalColor = 
-    data.stars === 5 ? "bg-cyan-50 border-cyan-300 text-cyan-700" :
-    data.stars === 4 ? "bg-amber-50 border-amber-300 text-amber-700" :
-    data.stars === 3 ? "bg-slate-100 border-slate-300 text-slate-600" :
-    "bg-orange-50 border-orange-200 text-orange-700";
+    data.stars === 5 ? "bg-cyan-50 dark:bg-cyan-950/30 border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300" :
+    data.stars === 4 ? "bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-350" :
+    data.stars === 3 ? "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300" :
+    "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-850 text-orange-700 dark:text-orange-300";
 
   const levelMascotAnimal = data.level === "Starters" ? "🦛" : data.level === "Movers" ? "🐒" : "🦁";
   const levelMascotName = data.level === "Starters" ? "Hippo Dễ Thương" : data.level === "Movers" ? "Monkey Thông Minh" : "Lion Dũng Cảm";
@@ -205,7 +205,7 @@ export default function ResultPage({ params }: ResultPageProps) {
     const words = sentence.split(/\s+/).filter(Boolean);
 
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4 py-6 border-y-2 border-slate-100 px-2 my-2 select-none">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4 py-6 border-y-2 border-slate-100 dark:border-slate-800 px-2 my-2 select-none">
         {words.map((word, index) => {
           const cleanedWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").toLowerCase();
           const isWrong = data.mispronouncedWords.includes(cleanedWord);
@@ -215,7 +215,7 @@ export default function ResultPage({ params }: ResultPageProps) {
               <span
                 key={index}
                 onClick={() => playWordTTS(word)}
-                className="relative cursor-pointer text-2xl md:text-3xl font-black text-rose-500 bg-rose-50 border-2 border-rose-300 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group underline decoration-wavy decoration-rose-400 decoration-3 underline-offset-4"
+                className="relative cursor-pointer text-2xl md:text-3xl font-black text-rose-500 bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-800 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group underline decoration-wavy decoration-rose-400 decoration-3 underline-offset-4"
                 title="Nhấn để nghe phát âm mẫu 🔊"
               >
                 {word}
@@ -230,7 +230,7 @@ export default function ResultPage({ params }: ResultPageProps) {
             <span
               key={index}
               onClick={() => playWordTTS(word)}
-              className="relative cursor-pointer text-2xl md:text-3xl font-black text-emerald-600 bg-emerald-50 border-2 border-emerald-300 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group"
+              className="relative cursor-pointer text-2xl md:text-3xl font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-300 dark:border-emerald-800 px-3 py-1 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 group"
               title="Phát âm tốt! Nhấn để nghe lại 🔊"
             >
               {word}
@@ -353,14 +353,14 @@ export default function ResultPage({ params }: ResultPageProps) {
         {skill === "Speaking" && (
           <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-8 shadow-xl">
             <div className="mb-4 text-center sm:text-left">
-              <h3 className="text-lg font-black text-slate-800 flex items-center justify-center sm:justify-start gap-2">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center justify-center sm:justify-start gap-2">
                 <MessageSquare className="w-5 h-5 text-emerald-500 animate-pulse" />
                 Chi tiết câu đọc của con:
               </h3>
               
               {/* Voice Accent Selector */}
-              <div className="mt-3 mb-2 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-2.5 inline-block text-left w-full sm:w-auto">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5 text-center sm:text-left">
+              <div className="mt-3 mb-2 bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700 rounded-2xl p-2.5 inline-block text-left w-full sm:w-auto">
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5 text-center sm:text-left">
                   Chọn accent của cô giáo AI:
                 </span>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-1.5">
@@ -373,8 +373,8 @@ export default function ResultPage({ params }: ResultPageProps) {
                         disabled={ttsPlaying}
                         className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border-2 transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-emerald-50 border-emerald-400 text-emerald-600 font-extrabold scale-105"
-                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                            ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-400 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 font-extrabold scale-105"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
                         }`}
                       >
                         {v.name}
@@ -384,28 +384,28 @@ export default function ResultPage({ params }: ResultPageProps) {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-500 font-bold mt-2">
-                Từ phát âm tốt tô màu <span className="text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">XANH LÁ</span>. Từ phát âm chưa đúng tô màu <span className="text-rose-600 font-extrabold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">ĐỎ</span>. Nhấn vào từng từ để nghe lại giọng đọc chuẩn nhé bé yêu!
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mt-2">
+                Từ phát âm tốt tô màu <span className="text-emerald-600 dark:text-emerald-400 font-extrabold bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-800">XANH LÁ</span>. Từ phát âm chưa đúng tô màu <span className="text-rose-600 dark:text-rose-450 font-extrabold bg-rose-50 dark:bg-rose-950/30 px-1.5 py-0.5 rounded-md border border-rose-100 dark:border-rose-800">ĐỎ</span>. Nhấn vào từng từ để nghe lại giọng đọc chuẩn nhé bé yêu!
               </p>
             </div>
 
             {renderSentenceFeedback()}
 
             {selectedWord ? (
-              <div className="mt-6 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs font-bold text-slate-600 flex items-center justify-between gap-3 shadow-inner animate-bounce-subtle">
+              <div className="mt-6 bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl p-4 text-xs font-bold text-slate-600 dark:text-slate-350 flex items-center justify-between gap-3 shadow-inner animate-bounce-subtle">
                 <div className="flex items-center gap-2">
                   <Volume2 className="w-5 h-5 text-blue-500 shrink-0" />
-                  <span>Bé vừa nghe từ: <strong className="text-blue-600 text-sm uppercase">"{selectedWord}"</strong>. Hãy tập bật âm của từ này nhé!</span>
+                  <span>Bé vừa nghe từ: <strong className="text-blue-600 dark:text-blue-400 text-sm uppercase">"{selectedWord}"</strong>. Hãy tập bật âm của từ này nhé!</span>
                 </div>
                 <button 
                   onClick={() => setSelectedWord(null)}
-                  className="text-[10px] bg-slate-200 border border-slate-300 text-slate-500 hover:bg-slate-300 hover:text-slate-700 rounded-lg px-2.5 py-1 font-black transition-colors"
+                  className="text-[10px] bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600 hover:text-slate-700 rounded-lg px-2.5 py-1 font-black transition-colors"
                 >
                   ĐÓNG ❌
                 </button>
               </div>
             ) : (
-              <div className="mt-4 text-center text-[10px] font-black text-slate-400 bg-slate-50/50 rounded-xl py-2 border border-slate-200/30">
+              <div className="mt-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl py-2 border border-slate-200/30 dark:border-slate-700">
                 💡 BÉ CÓ BIẾT: Nhấn trực tiếp vào bất kỳ từ nào ở trên để học cách phát âm chuẩn nhé!
               </div>
             )}
@@ -415,16 +415,16 @@ export default function ResultPage({ params }: ResultPageProps) {
         {/* B. LISTENING & READING FEEDBACK DETAIL */}
         {(skill === "Listening" || skill === "Reading") && (
           <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-8 shadow-xl">
-            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
               <CheckSquare className="w-5 h-5 text-blue-500" />
               Chi tiết câu trả lời trắc nghiệm:
             </h3>
 
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-1">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 mb-6">
+              <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide block mb-1">
                 {skill === "Listening" ? "Câu tiếng Anh cô giáo đã đọc:" : "Đoạn văn bé đã đọc:"}
               </span>
-              <p className="text-base font-extrabold text-slate-700">
+              <p className="text-base font-extrabold text-slate-700 dark:text-slate-200">
                 "{data.sentence}"
               </p>
             </div>
@@ -432,19 +432,19 @@ export default function ResultPage({ params }: ResultPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
               {/* Correct answer card */}
-              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex items-start gap-3">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-800 rounded-2xl p-4 flex items-start gap-3">
                 <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-black text-emerald-600 block">ĐÁP ÁN CHUẨN XÁC</span>
-                  <p className="text-sm font-extrabold text-slate-700 mt-1">{data.targetAnswer}</p>
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">ĐÁP ÁN CHUẨN XÁC</span>
+                  <p className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mt-1">{data.targetAnswer}</p>
                 </div>
               </div>
 
               {/* User selected card */}
               <div className={`border-2 rounded-2xl p-4 flex items-start gap-3 ${
                 isCorrectChoice 
-                  ? "bg-emerald-50 border-emerald-300" 
-                  : "bg-rose-50 border-rose-300"
+                  ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800" 
+                  : "bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800"
               }`}>
                 {isCorrectChoice ? (
                   <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
@@ -453,11 +453,11 @@ export default function ResultPage({ params }: ResultPageProps) {
                 )}
                 <div>
                   <span className={`text-xs font-black block ${
-                    isCorrectChoice ? "text-emerald-600" : "text-rose-600"
+                    isCorrectChoice ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                   }`}>
                     ĐÁP ÁN BÉ ĐÃ CHỌN
                   </span>
-                  <p className="text-sm font-extrabold text-slate-700 mt-1">{data.userAnswer}</p>
+                  <p className="text-sm font-extrabold text-slate-700 dark:text-slate-200 mt-1">{data.userAnswer}</p>
                 </div>
               </div>
 
@@ -466,8 +466,8 @@ export default function ResultPage({ params }: ResultPageProps) {
             <div className="mt-6 text-center">
               <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-xs border uppercase shadow-sm ${
                 isCorrectChoice 
-                  ? "bg-emerald-100 border-emerald-300 text-emerald-700" 
-                  : "bg-rose-100 border-rose-300 text-rose-700"
+                  ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300" 
+                  : "bg-rose-100 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-350"
               }`}>
                 {isCorrectChoice ? "🎉 Bé chọn đúng hoàn hảo!" : "😢 Bé chọn chưa chính xác rồi, cùng xem cô sửa nhé!"}
               </span>
@@ -479,16 +479,16 @@ export default function ResultPage({ params }: ResultPageProps) {
         {/* C. WRITING FEEDBACK DETAIL */}
         {skill === "Writing" && (
           <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-8 shadow-xl">
-            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
               <PenTool className="w-5 h-5 text-amber-500" />
               Chi tiết câu tập viết của con:
             </h3>
 
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-1">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 mb-6">
+              <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide block mb-1">
                 Gợi ý / Tranh đề bài:
               </span>
-              <p className="text-sm font-extrabold text-slate-600">
+              <p className="text-sm font-extrabold text-slate-600 dark:text-slate-350">
                 "{data.sentence}"
               </p>
             </div>
@@ -496,26 +496,26 @@ export default function ResultPage({ params }: ResultPageProps) {
             <div className="flex flex-col gap-4">
               
               {/* Kid's writing card */}
-              <div className="bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-4 relative overflow-hidden">
+              <div className="bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900 rounded-2xl p-4 relative overflow-hidden">
                 <span className="absolute right-3 top-3 text-2xl">✍️</span>
-                <span className="text-xs font-black text-amber-700 block">CÂU CON VIẾT THỰC TẾ:</span>
-                <p className="text-lg font-extrabold text-slate-700 mt-1 select-all">
+                <span className="text-xs font-black text-amber-700 dark:text-amber-450 block">CÂU CON VIẾT THỰC TẾ:</span>
+                <p className="text-lg font-extrabold text-slate-700 dark:text-slate-200 mt-1 select-all">
                   "{data.userAnswer}"
                 </p>
               </div>
 
               {/* AI corrections card */}
-              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 relative overflow-hidden">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-800 rounded-2xl p-4 relative overflow-hidden">
                 <span className="absolute right-3 top-3 text-2xl">👩‍🏫</span>
-                <span className="text-xs font-black text-emerald-600 block">CÂU SỬA CHUẨN CỦA CÔ GIÁO AI:</span>
-                <p className="text-lg font-extrabold text-emerald-700 mt-1 select-all font-sans">
+                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">CÂU SỬA CHUẨN CỦA CÔ GIÁO AI:</span>
+                <p className="text-lg font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 select-all font-sans">
                   "{data.corrections}"
                 </p>
               </div>
 
             </div>
 
-            <div className="mt-6 text-center text-[10px] font-black text-slate-400 bg-slate-50 rounded-xl py-2 border border-slate-200">
+            <div className="mt-6 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl py-2 border border-slate-200 dark:border-slate-700">
               💡 BÉ CÓ BIẾT: Hãy so sánh nốt chữ của câu bé viết và câu sửa của cô để nhớ bài học lâu hơn nhé!
             </div>
 
@@ -543,9 +543,9 @@ export default function ResultPage({ params }: ResultPageProps) {
               <div className="relative bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-3xl p-4 md:p-5 shadow-sm">
                 
                 {/* Arrow indicator absolute */}
-                <div className="hidden sm:block absolute left-0 top-8 w-4 h-4 bg-emerald-50 border-l-2 border-b-2 border-emerald-200 transform -translate-x-[9px] rotate-45" />
+                <div className="hidden sm:block absolute left-0 top-8 w-4 h-4 bg-emerald-50 dark:bg-emerald-950 border-l-2 border-b-2 border-emerald-200 dark:border-emerald-800 transform -translate-x-[9px] rotate-45" />
                 
-                <h4 className="text-emerald-800 font-extrabold text-sm mb-2 flex items-center gap-1">
+                <h4 className="text-emerald-800 dark:text-emerald-400 font-extrabold text-sm mb-2 flex items-center gap-1">
                   ✍️ Lời khuyên ấm áp của cô giáo AI:
                 </h4>
                 
@@ -556,13 +556,13 @@ export default function ResultPage({ params }: ResultPageProps) {
 
               {/* Extra correction tips if present */}
               {data.feedback.tips && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-start gap-2 shadow-sm text-xs font-bold text-yellow-800">
+                <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-2xl flex items-start gap-2 shadow-sm text-xs font-bold text-yellow-800 dark:text-yellow-450">
                   <span className="text-base leading-none -mt-0.5">💡</span>
                   <div className="w-full">
                     <span className="font-extrabold">
                       {skill === "Writing" ? "Mẹo ngữ pháp & lỗi sửa:" : "Lời giảng giải đáp án:"} 
                     </span>
-                    <p className="font-medium text-slate-600 leading-relaxed font-sans mt-0.5">{data.feedback.tips}</p>
+                    <p className="font-medium text-slate-600 dark:text-slate-350 leading-relaxed font-sans mt-0.5">{data.feedback.tips}</p>
                   </div>
                 </div>
               )}
@@ -575,16 +575,16 @@ export default function ResultPage({ params }: ResultPageProps) {
 
         {/* 4. Playful learning roadmap Checklist */}
         <section className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-8 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-slate-100 dark:border-slate-800">
             <h3 className="text-lg md:text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Compass className="w-6 h-6 text-blue-500 animate-spin" style={{ animationDuration: "10s" }} />
               Lộ trình rèn luyện sửa lỗi cho bé 🚀
             </h3>
             
             {/* Interactive Progress indicator inside roadmap */}
-            <div className="shrink-0 bg-blue-50 border border-blue-200 rounded-xl px-3 py-1 text-xs font-black text-blue-700 flex items-center gap-1.5">
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-1 text-xs font-black text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
               <span>Đã làm:</span>
-              <span className="font-mono text-sm text-blue-600">{completedCount}/3 bài</span>
+              <span className="font-mono text-sm text-blue-600 dark:text-blue-400">{completedCount}/3 bài</span>
             </div>
           </div>
 
@@ -597,8 +597,8 @@ export default function ResultPage({ params }: ResultPageProps) {
             {data.roadmap.map((task, index) => {
               const checked = checkedRoadmap[index];
               const checkedClass = checked 
-                ? "bg-slate-50 border-slate-200 opacity-60 text-slate-400 line-through" 
-                : "bg-white border-blue-200 hover:border-blue-400 text-slate-700 shadow-sm";
+                ? "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-60 text-slate-400 dark:text-slate-500 line-through" 
+                : "bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-850 hover:border-blue-400 dark:hover:border-blue-700 text-slate-700 dark:text-slate-200 shadow-sm";
 
               return (
                 <div
@@ -615,7 +615,7 @@ export default function ResultPage({ params }: ResultPageProps) {
                   </div>
                   
                   <div className="text-sm font-extrabold leading-relaxed font-sans">
-                    <span className="inline-block text-xs font-black bg-blue-100/60 text-blue-600 px-2 py-0.5 rounded-md mr-2 font-mono">
+                    <span className="inline-block text-xs font-black bg-blue-100/60 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md mr-2 font-mono">
                       Bài {index + 1}
                     </span>
                     {task}
@@ -627,7 +627,7 @@ export default function ResultPage({ params }: ResultPageProps) {
 
           {/* Celebratory message when all checklist item checked */}
           {progressPercent === 100 && (
-            <div className="mt-6 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-center text-xs font-black text-emerald-800 flex items-center justify-center gap-2 shadow-sm animate-bounce-subtle">
+            <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-800 rounded-2xl text-center text-xs font-black text-emerald-800 dark:text-emerald-350 flex items-center justify-center gap-2 shadow-sm animate-bounce-subtle">
               <span>🎉</span>
               <span>Siêu đỉnh Tâm Anh ơi! Con đã hoàn thành tất cả lộ trình rèn luyện để sửa lỗi. Ba mẹ thưởng cho con thôi nào!</span>
             </div>
