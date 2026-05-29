@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import DevelopmentRadarChart from "@/components/DevelopmentRadarChart";
 
 type Stage = "intro" | "warmup" | "picture" | "reading" | "writing" | "results";
 
@@ -548,7 +549,7 @@ export default function InteractiveTest() {
 
         <div className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-blue-100 dark:border-blue-900 relative z-10">
           <div className="text-6xl mb-4 animate-bounce" style={{ animationDuration: "2.5s" }}>🌟</div>
-          <h1 className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-2">BÀI THI TƯƠNG TÁC AI</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-2">BÀI THI ĐẦU VÀO CHO BÉ</h1>
           <h3 className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 md:mb-6">Đánh giá năng lực đầu vào</h3>
           
           <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 md:p-4 text-left border border-slate-200 dark:border-slate-600 space-y-2.5 md:space-y-3 mb-6 md:mb-8">
@@ -639,9 +640,10 @@ export default function InteractiveTest() {
             </h2>
             <p className="text-xs md:text-sm text-slate-400 dark:text-slate-500 font-extrabold mt-1">Tuổi học viên: {kidAge} tuổi</p>
 
-            {/* Recommended level badge */}
-            <div className="my-8 max-w-sm mx-auto">
-              <div className={`border-2 rounded-3xl p-6 shadow-md transition-all hover:scale-105 duration-300 ${overallLevelInfo.theme}`}>
+            {/* Stacking Recommended Level (ô 1) and Development Radar Chart (ô 2) vertically */}
+            <div className="flex flex-col gap-6 items-center justify-center my-8 max-w-xl mx-auto w-full">
+              {/* Top: Recommended Level Badge (ô 1) */}
+              <div className={`border-2 rounded-3xl p-6 shadow-md transition-all hover:scale-105 duration-300 text-center w-full flex flex-col justify-center items-center ${overallLevelInfo.theme}`}>
                 <span className="text-5xl block animate-bounce" style={{ animationDuration: "2s" }}>
                   {overallLevelInfo.mascot}
                 </span>
@@ -654,6 +656,21 @@ export default function InteractiveTest() {
                 <span className="inline-block mt-3 bg-white/70 px-3 py-1 rounded-xl text-xs font-bold border border-current">
                   {overallLevelInfo.title}
                 </span>
+              </div>
+
+              {/* Bottom: Development Radar Chart (ô 2) */}
+              <div className="flex justify-center items-center w-full">
+                <DevelopmentRadarChart
+                  title="Biểu đồ phát triển"
+                  colorScheme="violet"
+                  size={380}
+                  data={[
+                    { label: "Speaking (Nói)", value: scores.speaking, emoji: "🎤" },
+                    { label: "Listening (Nghe)", value: scores.listening, emoji: "🎧" },
+                    { label: "Reading (Đọc)", value: scores.reading, emoji: "📖" },
+                    { label: "Writing (Viết)", value: scores.writing, emoji: "✍️" },
+                  ]}
+                />
               </div>
             </div>
 

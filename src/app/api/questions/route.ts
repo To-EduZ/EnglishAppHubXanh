@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         filter.level = level;
       }
     }
-    
+
     if (partStr) {
       const part = parseInt(partStr, 10);
       if (!isNaN(part)) {
@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: `Dung lượng tệp tin quá lớn (${(imageFile.size / 1024 / 1024).toFixed(1)} MB). ` +
-                 `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
-                 `Admin vui lòng cắt riêng trang PDF chứa bài thi nói (thường chỉ < 1 MB) hoặc nén tệp PDF trước khi tải lên nhé! 📕`
+            `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
+            `Admin vui lòng cắt riêng trang PDF chứa bài thi nói (thường chỉ < 1 MB) hoặc nén tệp PDF trước khi tải lên nhé! 📕`
         },
         { status: 400 }
       );
@@ -290,8 +290,8 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json(
           {
             error: `Dung lượng tệp tin quá lớn (${(imageFile.size / 1024 / 1024).toFixed(1)} MB). ` +
-                   `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
-                   `Admin vui lòng cắt riêng trang PDF hoặc nén lại nhé! 📕`
+              `Cloudinary (Free Tier) giới hạn tải lên tệp PDF/ảnh tối đa là 10 MB. ` +
+              `Admin vui lòng cắt riêng trang PDF hoặc nén lại nhé! 📕`
           },
           { status: 400 }
         );

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { v2 as cloudinary } from "cloudinary";
+import { connectToDatabase } from "@/lib/mongodb";
+import Question from "@/models/Question";
+import { inMemoryQuestions } from "@/lib/dbStore";
 
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
@@ -168,6 +171,51 @@ You MUST respond strictly in the following JSON format:
 
     console.log("✅ [AI Auto-Digitalizer] Phân tích hoàn tất:", aiResponseContent);
     const parsedData = JSON.parse(aiResponseContent);
+
+    // Ensure the generated ID is unique
+    let baseId = parsedData.id || "ST_P1_01";
+    baseId = baseId.trim().toUpperCase();
+
+    const { isFallback } = await connectToDatabase();
+    let finalId = baseId;
+    let exists = true;
+    let counter = 1;
+
+    while (exists) {
+      if (!isFallback) {
+        const found = await Question.findOne({ id: finalId });
+        if (found) {
+          const match = finalId.match(/^(.*?)_(\d+)$/);
+          if (match) {
+            const prefix = match[1];
+            const num = parseInt(match[2], 10);
+            finalId = `${prefix}_${num + 1}`;
+          } else {
+            finalId = `${finalId}_${counter}`;
+            counter++;
+          }
+        } else {
+          exists = false;
+        }
+      } else {
+        const found = inMemoryQuestions.find((q) => q.id === finalId);
+        if (found) {
+          const match = finalId.match(/^(.*?)_(\d+)$/);
+          if (match) {
+            const prefix = match[1];
+            const num = parseInt(match[2], 10);
+            finalId = `${prefix}_${num + 1}`;
+          } else {
+            finalId = `${finalId}_${counter}`;
+            counter++;
+          }
+        } else {
+          exists = false;
+        }
+      }
+    }
+
+    parsedData.id = finalId;
 
     return NextResponse.json({
       success: true,

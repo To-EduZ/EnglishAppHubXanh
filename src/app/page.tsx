@@ -197,7 +197,7 @@ export default function Dashboard() {
               BÀI TEST ĐẦU VÀO ĐỘC QUYỀN
             </span>
             <h3 className="text-xl md:text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight">
-              Bài Thi Thử Thách Tương Tác AI 👩‍🏫
+              Bài thi đầu vào cho bé 👩‍🏫
             </h3>
             <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
               Đánh giá toàn diện 4 kỹ năng tiếng Anh (Nghe, Nói, Đọc, Viết) chuẩn Cambridge YLE qua hội thoại đối thoại sinh động với Cô giáo AI. Hệ thống tính điểm hình Khiên quốc tế và đề xuất lộ trình học tập tức thì!
@@ -206,7 +206,7 @@ export default function Dashboard() {
           <Link href="/interactive-test" className="w-full md:w-auto shrink-0 relative z-10">
             <button className="w-full md:w-auto btn-3d-pink px-6 md:px-8 py-3 md:py-4 tracking-wider uppercase font-black flex items-center justify-center gap-2 hover:scale-105 transition-transform text-xs md:text-base cursor-pointer">
               <Mic className="w-4 h-4 md:w-5 md:h-5 animate-pulse" />
-              THI TƯƠNG TÁC NGAY 🚀
+              THI ĐẦU VÀO NGAY 🚀
             </button>
           </Link>
         </section>
