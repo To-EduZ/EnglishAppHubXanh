@@ -76,7 +76,13 @@ export default function CambridgeImportPage() {
   const [level, setLevel] = useState<"Starters" | "Movers" | "Flyers">("Starters");
   const [part, setPart] = useState("1");
   const [type, setType] = useState("Scene_Description");
-  const [customType, setCustomType] = useState("");
+  const [contextTypes, setContextTypes] = useState<{ _id?: string; key: string; name: string }[]>([]);
+  const [showTypeManager, setShowTypeManager] = useState(false);
+  const [newTypeKey, setNewTypeKey] = useState("");
+  const [newTypeName, setNewTypeName] = useState("");
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [editTypeKey, setEditTypeKey] = useState("");
+  const [editTypeName, setEditTypeName] = useState("");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
   const [examinerScript, setExaminerScript] = useState("");
@@ -123,9 +129,109 @@ export default function CambridgeImportPage() {
     }
   };
 
+  const fetchContextTypes = async () => {
+    try {
+      const res = await fetch("/api/context-types");
+      const data = await res.json();
+      if (data.success) {
+        setContextTypes(data.data);
+        if (data.data.length > 0 && !data.data.some((t: any) => t.key === type)) {
+          setType(data.data[0].key);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách loại bối cảnh:", err);
+    }
+  };
+
   useEffect(() => {
     fetchQuestions();
+    fetchContextTypes();
   }, []);
+
+  // Auto-fill LEVEL based on QID prefix
+  useEffect(() => {
+    if (!qId) return;
+    const prefix = qId.trim().toUpperCase().split("_")[0];
+    if (prefix === "ST") setLevel("Starters");
+    else if (prefix === "MV") setLevel("Movers");
+    else if (prefix === "FL") setLevel("Flyers");
+  }, [qId]);
+
+  // Auto-fill PART based on QID pattern (e.g. ST_P2_03 -> Part 2)
+  useEffect(() => {
+    if (!qId) return;
+    const match = qId.match(/_P(\d+)_/i);
+    if (match) {
+      setPart(match[1]);
+    } else {
+      setPart("1");
+    }
+  }, [qId]);
+
+  const handleCreateType = async () => {
+    if (!newTypeKey.trim() || !newTypeName.trim()) {
+      alert("Vui lòng điền đầy đủ Mã Key và Tên hiển thị!");
+      return;
+    }
+    try {
+      const res = await fetch("/api/context-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: newTypeKey.trim(), name: newTypeName.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi thêm loại bối cảnh");
+      }
+      showToast("success", `Đã thêm loại bối cảnh '${newTypeName}' thành công!`);
+      setNewTypeKey("");
+      setNewTypeName("");
+      fetchContextTypes();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleUpdateType = async (id: string) => {
+    if (!editTypeKey.trim() || !editTypeName.trim()) {
+      alert("Vui lòng điền đầy đủ Mã Key và Tên hiển thị!");
+      return;
+    }
+    try {
+      const res = await fetch("/api/context-types", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, key: editTypeKey.trim(), name: editTypeName.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi cập nhật loại bối cảnh");
+      }
+      showToast("success", "Cập nhật loại bối cảnh thành công!");
+      setEditingTypeId(null);
+      fetchContextTypes();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteType = async (id: string) => {
+    if (!window.confirm("Bé/Admin có chắc chắn muốn xóa loại bối cảnh này? Các câu hỏi cũ sử dụng loại này sẽ không bị ảnh hưởng, nhưng loại bối cảnh sẽ biến mất khỏi danh sách chọn!")) return;
+    try {
+      const res = await fetch(`/api/context-types?id=${id}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi xóa loại bối cảnh");
+      }
+      showToast("success", "Đã xóa loại bối cảnh thành công!");
+      fetchContextTypes();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   // Handle Drag & Drop events
   const handleDrag = (e: React.DragEvent) => {
@@ -205,8 +311,11 @@ export default function CambridgeImportPage() {
     setQId("");
     setLevel("Starters");
     setPart("1");
-    setType("Scene_Description");
-    setCustomType("");
+    if (contextTypes.length > 0) {
+      setType(contextTypes[0].key);
+    } else {
+      setType("Scene_Description");
+    }
     setTopic("");
     setDifficulty("Medium");
     setExaminerScript("");
@@ -233,13 +342,9 @@ export default function CambridgeImportPage() {
     setLevel(q.level);
     setPart(String(q.part));
     
-    const standardTypes = ["Scene_Description", "Object_Card", "Storytelling", "Find_Differences"];
-    if (standardTypes.includes(q.type)) {
-      setType(q.type);
-      setCustomType("");
-    } else {
-      setType("Custom");
-      setCustomType(q.type);
+    setType(q.type);
+    if (q.type && !contextTypes.some(t => t.key === q.type)) {
+      setContextTypes(prev => [...prev, { key: q.type, name: q.type.replace(/_/g, " ") }]);
     }
     
     setTopic(q.topic || "General");
@@ -346,13 +451,10 @@ export default function CambridgeImportPage() {
         setLevel(item.level || "Starters");
         setPart(item.part ? String(item.part) : "1");
         
-        const standardTypes = ["Scene_Description", "Object_Card", "Storytelling", "Find_Differences"];
-        if (standardTypes.includes(item.type)) {
-          setType(item.type);
-          setCustomType("");
-        } else {
-          setType("Custom");
-          setCustomType(item.type || "");
+        const receivedType = item.type || "Scene_Description";
+        setType(receivedType);
+        if (receivedType && !contextTypes.some(t => t.key === receivedType)) {
+          setContextTypes(prev => [...prev, { key: receivedType, name: receivedType.replace(/_/g, " ") }]);
         }
         
         setTopic(item.topic || "General");
@@ -445,8 +547,7 @@ export default function CambridgeImportPage() {
       formData.append("level", level);
       formData.append("part", part);
       
-      const finalType = type === "Custom" ? customType.trim() : type;
-      formData.append("type", finalType || "Scene_Description");
+      formData.append("type", type || "Scene_Description");
       formData.append("topic", topic.trim() || "General");
       formData.append("difficulty", difficulty);
       formData.append("contextTags", contextTags.trim());
@@ -629,8 +730,8 @@ export default function CambridgeImportPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               
-              {/* Row 1: ID, Level, Part */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Row 1: ID, Level (Part is auto-filled and hidden) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="qId">
@@ -651,7 +752,7 @@ export default function CambridgeImportPage() {
                     }`}
                   />
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">
-                    {isEditing ? "Không thể thay đổi Mã ID khi đang chỉnh sửa" : "Mã duy nhất: Cấp độ_Phần_Số câu"}
+                    {isEditing ? "Không thể thay đổi Mã ID khi đang chỉnh sửa" : "Mã duy nhất: Cấp độ_Phần_Số câu (Ví dụ: ST_P1_03)"}
                   </span>
                 </div>
 
@@ -659,54 +760,66 @@ export default function CambridgeImportPage() {
                   <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="level">
                     Cấp độ (Level) <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    id="level"
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value as any)}
-                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
-                  >
-                    <option value="Starters">Starters 🦛</option>
-                    <option value="Movers">Movers 🐒</option>
-                    <option value="Flyers">Flyers 🦁</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-355 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="part">
-                    Phần thi (Part) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="part"
-                    type="number"
-                    min="1"
-                    max="10"
-                    required
-                    value={part}
-                    onChange={(e) => setPart(e.target.value)}
-                    placeholder="Ví dụ: 1"
-                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
-                  />
+                  {(() => {
+                    const detectedPrefix = qId.trim().toUpperCase().split("_")[0];
+                    const isLevelAutoFilled = ["ST", "MV", "FL"].includes(detectedPrefix);
+                    return (
+                      <>
+                        <select
+                          id="level"
+                          value={level}
+                          onChange={(e) => setLevel(e.target.value as any)}
+                          disabled={isLevelAutoFilled}
+                          className={`w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer ${
+                            isLevelAutoFilled
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                              : "text-slate-700 dark:text-slate-200"
+                          }`}
+                        >
+                          <option value="Starters">Starters 🦛</option>
+                          <option value="Movers">Movers 🐒</option>
+                          <option value="Flyers">Flyers 🦁</option>
+                        </select>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">
+                          {isLevelAutoFilled ? "Tự động khóa theo mã prefix ID" : "Tự điền dựa trên tiền tố ID (ST, MV, FL)"}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
               </div>
 
               {/* Row 2: Type, Topic & Difficulty */}
+              {/* Row 2: Type, Topic & Difficulty */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="type">
-                    Loại bối cảnh học liệu <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide text-left" htmlFor="type">
+                      Loại bối cảnh <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTypeManager(true)}
+                      className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-0.5 transition-colors cursor-pointer"
+                    >
+                      ⚙️ Quản lý danh mục
+                    </button>
+                  </div>
                   <select
                     id="type"
                     value={type}
                     onChange={(e) => setType(e.target.value)}
                     className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
                   >
-                    <option value="Scene_Description">Scene Description (Mô tả tranh bối cảnh)</option>
-                    <option value="Object_Card">Object Card (Thẻ vật thể bóc tách)</option>
-                    <option value="Storytelling">Storytelling (Kể chuyện theo tranh liên hoàn)</option>
-                    <option value="Find_Differences">Find the Differences (Tìm điểm khác biệt)</option>
-                    <option value="Custom">Custom (Nhập loại bối cảnh mới...)</option>
+                    {contextTypes.map((t) => (
+                      <option key={t.key} value={t.key}>
+                        {t.name}
+                      </option>
+                    ))}
+                    {contextTypes.length === 0 && (
+                      <option value="Scene_Description">Scene Description (Mô tả tranh bối cảnh)</option>
+                    )}
                   </select>
                 </div>
 
@@ -741,23 +854,6 @@ export default function CambridgeImportPage() {
                   </select>
                 </div>
               </div>
-
-              {type === "Custom" && (
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="customType">
-                    Nhập loại bối cảnh tùy chỉnh <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="customType"
-                    type="text"
-                    required
-                    value={customType}
-                    onChange={(e) => setCustomType(e.target.value)}
-                    placeholder="Ví dụ: Picture_Matching"
-                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 animate-pulse"
-                  />
-                </div>
-              )}
 
               {/* Row 3: Context Tags */}
               <div>
@@ -1246,7 +1342,7 @@ export default function CambridgeImportPage() {
                         </td>
 
                         <td className="py-4 px-4 text-slate-500 dark:text-slate-400 w-32 truncate max-w-[130px]" title={q.type || ""}>
-                          {(q.type || "").replace(/_/g, " ")}
+                          {contextTypes.find(t => t.key === q.type)?.name || (q.type || "").replace(/_/g, " ")}
                         </td>
 
                         <td className="py-4 px-4 text-slate-750 dark:text-slate-350 font-black w-28 truncate max-w-[110px]" title={q.topic || "General"}>
@@ -1339,6 +1435,150 @@ export default function CambridgeImportPage() {
             </div>
           )}
         </section>
+
+        {showTypeManager && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-950 rounded-3xl w-full max-w-lg border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="p-5 border-b border-slate-100 dark:border-slate-805 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  ⚙️ Quản lý Loại bối cảnh học liệu
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTypeManager(false);
+                    setEditingTypeId(null);
+                    setNewTypeKey("");
+                    setNewTypeName("");
+                  }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-extrabold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+                
+                {/* List of current types */}
+                <div className="flex flex-col gap-2.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Danh sách hiện tại ({contextTypes.length})</h4>
+                  {contextTypes.length === 0 ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Chưa có loại bối cảnh nào. Vui lòng thêm bên dưới.</p>
+                  ) : (
+                    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+                      {contextTypes.map((t) => (
+                        <div key={t.key} className="p-3.5 flex items-center justify-between bg-white dark:bg-slate-900/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                          {editingTypeId === t.key || (t._id && editingTypeId === t._id) ? (
+                            // Editing mode
+                            <div className="flex-1 flex flex-col gap-2 mr-3 col">
+                              <input
+                                type="text"
+                                value={editTypeKey}
+                                onChange={(e) => setEditTypeKey(e.target.value)}
+                                placeholder="Mã key (ví dụ: Storytelling)"
+                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs font-extrabold text-slate-700 dark:text-slate-200 outline-none bg-white dark:bg-slate-900 focus:border-indigo-400"
+                              />
+                              <input
+                                type="text"
+                                value={editTypeName}
+                                onChange={(e) => setEditTypeName(e.target.value)}
+                                placeholder="Tên hiển thị (tiếng Việt)"
+                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs font-extrabold text-slate-700 dark:text-slate-200 outline-none bg-white dark:bg-slate-900 focus:border-indigo-400"
+                              />
+                              <div className="flex gap-2 justify-end mt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTypeId(null)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold text-slate-505 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 cursor-pointer"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateType(t._id || t.key)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold text-white bg-indigo-500 hover:bg-indigo-600 cursor-pointer"
+                                >
+                                  Lưu
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            // Normal mode
+                            <>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200">{t.name}</span>
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono">Key: {t.key}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingTypeId(t._id || t.key);
+                                    setEditTypeKey(t.key);
+                                    setEditTypeName(t.name);
+                                  }}
+                                  className="text-xs font-black text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 transition-colors cursor-pointer"
+                                >
+                                  Sửa
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteType(t._id || t.key)}
+                                  className="text-xs font-black text-rose-500 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-slate-100 dark:border-slate-800" />
+
+                {/* Add Form */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Thêm loại bối cảnh mới</h4>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase">Mã Key (Tiếng Anh, không dấu cách)</label>
+                    <input
+                      type="text"
+                      value={newTypeKey}
+                      onChange={(e) => setNewTypeKey(e.target.value)}
+                      placeholder="Ví dụ: Roleplay_Scenario"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase">Tên hiển thị (Tiếng Việt)</label>
+                    <input
+                      type="text"
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      placeholder="Ví dụ: Scenario đóng vai hội thoại"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateType}
+                    className="mt-2 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white p-3 text-sm font-black transition-colors cursor-pointer text-center"
+                  >
+                    ＋ Thêm loại bối cảnh mới
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </main>
     </div>
