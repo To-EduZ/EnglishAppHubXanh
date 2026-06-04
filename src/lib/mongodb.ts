@@ -32,6 +32,9 @@ export async function connectToDatabase(): Promise<{
     const opts = {
       bufferCommands: false,
       serverSelectionTimeoutMS: 3000, // Timeout fast if MongoDB local isn't running
+      maxPoolSize: 50, // Connection pool size limit for high concurrency scaling
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      family: 4, // Use IPv4, skip trying IPv6 first to connect faster
     };
 
     console.log("🔌 Connecting to MongoDB local at:", MONGODB_URI);

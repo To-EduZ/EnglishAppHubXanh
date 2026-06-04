@@ -72,6 +72,12 @@ const QuestionSchema: Schema<IQuestion> = new Schema(
   { timestamps: true }
 );
 
+// Bổ sung chỉ mục (Indexes) phục vụ Scale & Tối ưu hóa truy vấn
+QuestionSchema.index({ id: 1 }, { unique: true });
+QuestionSchema.index({ level: 1, part: 1 });
+QuestionSchema.index({ topic: 1 });
+QuestionSchema.index({ difficulty: 1 });
+
 const Question: Model<IQuestion> =
   mongoose.models.Question ||
   mongoose.model<IQuestion>("Question", QuestionSchema);

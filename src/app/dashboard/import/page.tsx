@@ -108,6 +108,90 @@ export default function CambridgeImportPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // Sandbox states & handlers
+  const [sandboxSubQIndex, setSandboxSubQIndex] = useState(0);
+  const [sandboxInput, setSandboxInput] = useState("");
+  const [sandboxLoading, setSandboxLoading] = useState(false);
+  const [sandboxResult, setSandboxResult] = useState<{
+    matchedKeywords: string[];
+    missedKeywords: string[];
+    targetGrammarMatched: string[];
+    aiResponse: string;
+    stageComplete: boolean;
+  } | null>(null);
+
+  const handleRunSandbox = async () => {
+    if (!sandboxInput.trim()) {
+      alert("Vui lòng nhập câu trả lời học sinh mẫu để thử nghiệm!");
+      return;
+    }
+
+    const targetSubQ = subQuestions[sandboxSubQIndex];
+    if (!targetSubQ || !targetSubQ.examinerScript.trim()) {
+      alert("Vui lòng thiết lập kịch bản câu hỏi tương ứng trong form trước khi thử nghiệm!");
+      return;
+    }
+
+    setSandboxLoading(true);
+    setSandboxResult(null);
+
+    try {
+      const expectedKeywordsList = targetSubQ.expectedKeywords.split(",").map(s => s.trim()).filter(Boolean);
+      const targetGrammarList = targetSubQ.targetGrammar.split(",").map(s => s.trim()).filter(Boolean);
+
+      const spokenLower = sandboxInput.toLowerCase();
+      const matchedKeywords = expectedKeywordsList.filter(kw => spokenLower.includes(kw.toLowerCase()));
+      const missedKeywords = expectedKeywordsList.filter(kw => !spokenLower.includes(kw.toLowerCase()));
+      const targetGrammarMatched = targetGrammarList.filter(g => spokenLower.includes(g.toLowerCase()));
+
+      const parsedQuestions = subQuestions
+        .filter(q => q.examinerScript.trim() !== "")
+        .map((q, idx) => ({
+          examinerScript: q.examinerScript.trim(),
+          expectedKeywords: q.expectedKeywords.split(",").map(s => s.trim()).filter(Boolean),
+          targetGrammar: q.targetGrammar.split(",").map(s => s.trim()).filter(Boolean),
+          topic: q.topic?.trim() || topic.trim() || "General",
+          level: q.level || level || "Starters",
+          difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard")
+        }));
+
+      const formData = new FormData();
+      formData.append("stage", "picture");
+      formData.append("text", sandboxInput.trim());
+      formData.append("chatHistory", JSON.stringify([
+        { id: "1", role: "ai", content: targetSubQ.examinerScript.trim(), stage: "picture" }
+      ]));
+      formData.append("context", JSON.stringify({
+        pictureIndex: 0,
+        subQuestionIndex: sandboxSubQIndex,
+        questions: parsedQuestions
+      }));
+
+      const res = await fetch("/api/interactive-chat", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Lỗi gọi API chấm điểm AI.");
+      }
+
+      setSandboxResult({
+        matchedKeywords,
+        missedKeywords,
+        targetGrammarMatched,
+        aiResponse: data.aiResponse || "",
+        stageComplete: data.stageComplete || false
+      });
+    } catch (err: any) {
+      console.error("Lỗi Sandbox:", err);
+      alert("Lỗi kiểm thử AI: " + err.message);
+    } finally {
+      setSandboxLoading(false);
+    }
+  };
+
   // Load questions list on mount
   const fetchQuestions = async () => {
     setLoadingList(true);
@@ -149,25 +233,25 @@ export default function CambridgeImportPage() {
     fetchContextTypes();
   }, []);
 
-  // Auto-fill LEVEL based on QID prefix
+  // Auto-fill LEVEL based on QID prefix (only when creating a new question)
   useEffect(() => {
-    if (!qId) return;
+    if (!qId || isEditing) return;
     const prefix = qId.trim().toUpperCase().split("_")[0];
     if (prefix === "ST") setLevel("Starters");
     else if (prefix === "MV") setLevel("Movers");
     else if (prefix === "FL") setLevel("Flyers");
-  }, [qId]);
+  }, [qId, isEditing]);
 
-  // Auto-fill PART based on QID pattern (e.g. ST_P2_03 -> Part 2)
+  // Auto-fill PART based on QID pattern (e.g. ST_P2_03 -> Part 2, only when creating a new question)
   useEffect(() => {
-    if (!qId) return;
+    if (!qId || isEditing) return;
     const match = qId.match(/_P(\d+)_/i);
     if (match) {
       setPart(match[1]);
     } else {
       setPart("1");
     }
-  }, [qId]);
+  }, [qId, isEditing]);
 
   const handleCreateType = async () => {
     if (!newTypeKey.trim() || !newTypeName.trim()) {
@@ -697,8 +781,26 @@ export default function CambridgeImportPage() {
           
           {/* LEFT: Import Form (8 cols on large) */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-700 p-4 md:p-6 md:p-8 shadow-xl lg:col-span-8 flex flex-col gap-4 md:gap-6">
+            {isEditing && (
+              <div className="bg-amber-50 dark:bg-slate-850 border-2 border-amber-300 dark:border-amber-900 text-amber-800 dark:text-amber-300 rounded-2xl p-4 flex items-center justify-between animate-bounce-subtle shadow-sm select-none">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">✏️</span>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider">Đang ở chế độ chỉnh sửa học liệu</h4>
+                    <p className="text-[11px] font-bold mt-0.5 opacity-80">Mã ID đang sửa: <strong className="font-mono text-xs text-indigo-600 dark:text-indigo-400">{editingId}</strong></p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="btn-3d-gray px-3 py-1.5 text-[10px] font-black uppercase tracking-wider hover:scale-105 active:translate-y-0.5 cursor-pointer"
+                >
+                  Hủy chỉnh sửa
+                </button>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-              <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <PenTool className="w-6 h-6 text-indigo-500" />
                 {isEditing ? "Cập Nhật Học Liệu & Kịch Bản AI ✏️" : "Siêu dữ liệu Học liệu & Kịch bản AI"}
               </h3>
@@ -769,19 +871,14 @@ export default function CambridgeImportPage() {
                           id="level"
                           value={level}
                           onChange={(e) => setLevel(e.target.value as any)}
-                          disabled={isLevelAutoFilled}
-                          className={`w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer ${
-                            isLevelAutoFilled
-                              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
-                              : "text-slate-700 dark:text-slate-200"
-                          }`}
+                          className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer text-slate-700 dark:text-slate-200"
                         >
                           <option value="Starters">Starters 🦛</option>
                           <option value="Movers">Movers 🐒</option>
                           <option value="Flyers">Flyers 🦁</option>
                         </select>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">
-                          {isLevelAutoFilled ? "Tự động khóa theo mã prefix ID" : "Tự điền dựa trên tiền tố ID (ST, MV, FL)"}
+                          {isLevelAutoFilled ? "Tự động chọn theo mã prefix ID (có thể chỉnh sửa thủ công)" : "Tự điền dựa trên tiền tố ID (ST, MV, FL)"}
                         </span>
                       </>
                     );
@@ -1173,6 +1270,162 @@ export default function CambridgeImportPage() {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* AI Sandbox Evaluation Test Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border-4 border-indigo-200 dark:border-indigo-900 p-4 md:p-6 shadow-xl relative overflow-hidden">
+              <span className="absolute top-2 right-4 text-2xl animate-pulse">🧪</span>
+              <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b pb-2">
+                <span>AI Sandbox - Thử nghiệm nhanh</span>
+              </h4>
+              
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-4">
+                Nhập thử một câu trả lời mẫu của học sinh để chạy thử nghiệm chấm điểm AI và xem phản hồi của giám khảo.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                {/* Select subquestion to test against */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-550 dark:text-slate-450 mb-1">
+                    Chọn câu hỏi cần test
+                  </label>
+                  <select
+                    value={sandboxSubQIndex}
+                    onChange={(e) => {
+                      setSandboxSubQIndex(parseInt(e.target.value, 10));
+                      setSandboxResult(null);
+                    }}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+                  >
+                    {subQuestions.map((q, idx) => (
+                      <option key={idx} value={idx} disabled={!q.examinerScript.trim()}>
+                        Câu hỏi {idx + 1}: {q.examinerScript.trim() ? `${q.examinerScript.substring(0, 30)}...` : "(Trống)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Question Details info box */}
+                {subQuestions[sandboxSubQIndex]?.examinerScript.trim() && (
+                  <div className="bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 space-y-1">
+                    <div><strong>Script:</strong> "{subQuestions[sandboxSubQIndex].examinerScript}"</div>
+                    {subQuestions[sandboxSubQIndex].expectedKeywords.trim() && (
+                      <div><strong>Từ khóa chấm:</strong> <span className="text-emerald-600 dark:text-emerald-400 font-bold">{subQuestions[sandboxSubQIndex].expectedKeywords}</span></div>
+                    )}
+                    {subQuestions[sandboxSubQIndex].targetGrammar.trim() && (
+                      <div><strong>Ngữ pháp đích:</strong> <span className="text-indigo-600 dark:text-indigo-400 font-bold">{subQuestions[sandboxSubQIndex].targetGrammar}</span></div>
+                    )}
+                  </div>
+                )}
+
+                {/* User transcription input */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-550 dark:text-slate-450 mb-1">
+                    Câu trả lời của học viên (Sample text)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={sandboxInput}
+                    onChange={(e) => setSandboxInput(e.target.value)}
+                    placeholder="Ví dụ: I can see a monkey climbing a tall tree."
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs font-bold text-slate-750 dark:text-slate-200 outline-none focus:border-indigo-400 bg-white dark:bg-slate-900"
+                  />
+                </div>
+
+                {/* Submit button */}
+                <button
+                  type="button"
+                  onClick={handleRunSandbox}
+                  disabled={sandboxLoading || !sandboxInput.trim() || !subQuestions[sandboxSubQIndex]?.examinerScript.trim()}
+                  className="btn-3d-indigo w-full py-2.5 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
+                >
+                  {sandboxLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Đang xử lý AI...
+                    </>
+                  ) : (
+                    <>
+                      <span>Chạy thử nghiệm AI ⚡</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Evaluation results */}
+                {sandboxResult && (
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-1 flex flex-col gap-3">
+                    <h5 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Kết quả phân tích từ AI:</h5>
+                    
+                    {/* Keyword Matches analysis */}
+                    <div className="space-y-1.5">
+                      <div className="text-[9px] font-black text-slate-500 uppercase">So khớp Từ khóa (Expected Keywords)</div>
+                      <div className="flex flex-wrap gap-1">
+                        {sandboxResult.matchedKeywords.map((kw: string) => (
+                          <span key={kw} className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span>⭐</span> {kw}
+                          </span>
+                        ))}
+                        {sandboxResult.missedKeywords.map((kw: string) => (
+                          <span key={kw} className="bg-rose-50 dark:bg-rose-955/30 text-rose-500 dark:text-rose-450 border border-rose-200 dark:border-rose-900 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span>❌</span> {kw}
+                          </span>
+                        ))}
+                        {sandboxResult.matchedKeywords.length === 0 && sandboxResult.missedKeywords.length === 0 && (
+                          <span className="text-[10px] font-bold text-slate-400 italic">Không có từ khóa yêu cầu</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Grammar Matches analysis */}
+                    {sandboxResult.targetGrammarMatched.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[9px] font-black text-slate-505 uppercase">Cấu trúc khớp (Grammar Target)</div>
+                        <div className="flex flex-wrap gap-1">
+                          {sandboxResult.targetGrammarMatched.map((g: string) => (
+                            <span key={g} className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900 text-[9px] font-black px-2 py-0.5 rounded-full">
+                              🎯 {g}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI Response feedback bubble */}
+                    <div className="space-y-1.5">
+                      <div className="text-[9px] font-black text-slate-550 uppercase">Phản hồi của Cô Lily AI</div>
+                      <div className="relative bg-slate-50 dark:bg-slate-850 border dark:border-slate-800 rounded-2xl p-3 text-slate-700 dark:text-slate-200 text-xs font-bold leading-relaxed shadow-inner">
+                        <div className="absolute left-3 top-[-6px] w-0 h-0 border-b-[6px] border-b-slate-50 dark:border-b-slate-850 border-x-[5px] border-x-transparent" />
+                        "{sandboxResult.aiResponse}"
+                      </div>
+                    </div>
+
+                    {/* Kết quả đạt yêu cầu câu hỏi con */}
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-850 p-2 rounded-xl border dark:border-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                      <span>Đạt yêu cầu câu hỏi này:</span>
+                      {sandboxResult.missedKeywords.length === 0 ? (
+                        <span className="text-emerald-600 font-extrabold uppercase">ĐẠT (PASSED) ✅</span>
+                      ) : (
+                        <span className="text-rose-500 font-extrabold uppercase">CHƯA ĐẠT (FAILED) ❌</span>
+                      )}
+                    </div>
+
+                    {/* Stage status complete */}
+                    <div className="flex flex-col gap-1 bg-slate-50 dark:bg-slate-850 p-2 rounded-xl border dark:border-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                      <div className="flex justify-between items-center w-full">
+                        <span>Hoàn thành chặng (Stage Complete):</span>
+                        <span className={sandboxResult.stageComplete ? "text-emerald-600 font-extrabold uppercase" : "text-amber-600 font-extrabold uppercase"}>
+                          {sandboxResult.stageComplete ? "Có (True) ✅" : "Chưa (False) ⏳"}
+                        </span>
+                      </div>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 normal-case leading-normal font-normal">
+                        * Hoàn thành chặng khi đây là câu hỏi con cuối cùng (Câu hỏi 5) trong bối cảnh bức tranh.
+                      </span>
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
             </div>
 
             {/* Quick PDF Extraction Instruction Guidelines */}
