@@ -87,6 +87,8 @@ export default function InteractiveTest() {
   // Stage 2: 2 Pictures Sequence States
   const [picQuestions, setPicQuestions] = useState<any[]>([]);
   const [pictureIndex, setPictureIndex] = useState(0);
+  const [subQuestionIndex, setSubQuestionIndex] = useState(0);
+  const [lastAskedPicIndex, setLastAskedPicIndex] = useState<number | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [keywordsHitPic1, setKeywordsHitPic1] = useState(0);
   const [totalProbingTurns, setTotalProbingTurns] = useState(0);
@@ -189,12 +191,32 @@ export default function InteractiveTest() {
     } finally {
       setIsGenerating(false);
       setStage("warmup");
+      setPictureIndex(0);
+      setSubQuestionIndex(0);
+      setLastAskedPicIndex(null);
       // Add slight delay to make transitions natural
       setTimeout(() => {
         addAiMessage("Hello! Welcome to the English test. What's your name?");
       }, 500);
     }
   };
+
+  // Automatically ask the first sub-question when starting picture stage or switching pictures
+  useEffect(() => {
+    if (stage === "picture" && currentQuestion) {
+      if (lastAskedPicIndex !== pictureIndex) {
+        setLastAskedPicIndex(pictureIndex);
+        setSubQuestionIndex(0);
+        
+        const firstQuestionText = currentQuestion.questions?.[0]?.examinerScript || currentQuestion.examinerScript || "Look at the picture. What can you see?";
+        
+        const timer = setTimeout(() => {
+          addAiMessage(firstQuestionText);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [stage, pictureIndex, currentQuestion, lastAskedPicIndex]);
 
   const startRecording = async () => {
     try {
@@ -240,7 +262,9 @@ export default function InteractiveTest() {
       if (stage === "picture" && currentQuestion) {
         formData.append("context", JSON.stringify({
           pictureIndex,
-          expectedKeywords: currentQuestion.evaluationCriteria?.expectedKeywords || []
+          subQuestionIndex,
+          questions: currentQuestion.questions || [],
+          expectedKeywords: currentQuestion.questions?.[subQuestionIndex]?.expectedKeywords || currentQuestion.evaluationCriteria?.expectedKeywords || []
         }));
       } else if (stage === "reading") {
         formData.append("context", JSON.stringify({
@@ -288,7 +312,7 @@ export default function InteractiveTest() {
 
         // 4. Track keywords and probing turns during Stage 2 Picture description
         if (stage === "picture" && currentQuestion) {
-          const expected = currentQuestion.evaluationCriteria?.expectedKeywords || [];
+          const expected = currentQuestion.questions?.[subQuestionIndex]?.expectedKeywords || currentQuestion.evaluationCriteria?.expectedKeywords || [];
           const spoken = (data.transcribedText || "").toLowerCase();
           const newlyFound = expected.filter((kw: string) => spoken.includes(kw.toLowerCase()));
           
@@ -302,6 +326,10 @@ export default function InteractiveTest() {
         }
 
         // 6. Handle automatic stage transitions
+        if (stage === "picture" && !data.stageComplete) {
+          setSubQuestionIndex(prev => prev + 1);
+        }
+
         if (data.stageComplete) {
           if (stage === "warmup") {
             setTimeout(() => setStage("picture"), 2500);
@@ -322,6 +350,7 @@ export default function InteractiveTest() {
                 
                 setKeywordsMentioned([]);
                 setProbingTurnsCount(0);
+                setSubQuestionIndex(0);
                 setIsProcessing(false);
               }, 2500);
             } else {
@@ -404,8 +433,16 @@ export default function InteractiveTest() {
       }
 
       // Calculate final aggregated scores across all 4 stages
-      const expectedKeywordsLength1 = Math.max(picQuestions[0]?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
-      const expectedKeywordsLength2 = Math.max(picQuestions[1 % picQuestions.length]?.evaluationCriteria?.expectedKeywords?.length || 3, 1);
+      const expectedKeywordsLength1 = Math.max(
+        picQuestions[0]?.questions?.reduce((acc: number, q: any) => acc + (q.expectedKeywords?.length || 0), 0) ||
+        picQuestions[0]?.evaluationCriteria?.expectedKeywords?.length || 3,
+        1
+      );
+      const expectedKeywordsLength2 = Math.max(
+        picQuestions[1 % picQuestions.length]?.questions?.reduce((acc: number, q: any) => acc + (q.expectedKeywords?.length || 0), 0) ||
+        picQuestions[1 % picQuestions.length]?.evaluationCriteria?.expectedKeywords?.length || 3,
+        1
+      );
       const totalExpected = expectedKeywordsLength1 + expectedKeywordsLength2;
       const totalKeywordsHit = keywordsHitPic1 + keywordsMentioned.length;
 
@@ -867,6 +904,8 @@ export default function InteractiveTest() {
                 setWritingSubmitted(false);
                 setSaveSuccess(null);
                 setPictureIndex(0);
+                setSubQuestionIndex(0);
+                setLastAskedPicIndex(null);
                 setKeywordsHitPic1(0);
                 setTotalProbingTurns(0);
                 setWritingTaskIndex(0);
@@ -951,9 +990,14 @@ export default function InteractiveTest() {
       {/* Context Area - Dynamically based on current stage */}
       {stage === "picture" && currentQuestion && (
         <div className="bg-amber-50 dark:bg-amber-950/20 p-4 border-b border-amber-200 dark:border-amber-900/50 flex flex-col items-center select-none">
-          <h3 className="font-extrabold text-amber-700 dark:text-amber-300 mb-2.5 flex items-center gap-2 text-sm uppercase tracking-wider text-center">
-            <ImageIcon className="w-5 h-5 shrink-0 animate-bounce" /> 
-            [Picture {pictureIndex + 1}/2] Look at this picture and describe what you see:
+          <h3 className="font-extrabold text-amber-700 dark:text-amber-300 mb-2.5 flex flex-col items-center gap-1.5 text-sm uppercase tracking-wider text-center">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 shrink-0 animate-bounce" /> 
+              <span>[Picture {pictureIndex + 1}/2 - Question {subQuestionIndex + 1}/5]</span>
+            </div>
+            <span className="text-slate-800 dark:text-slate-200 normal-case mt-1 font-sans text-sm md:text-base bg-white/65 dark:bg-slate-850/65 px-4 py-1.5 rounded-2xl border border-amber-200/50 dark:border-amber-900/30 shadow-sm max-w-md">
+              {currentQuestion.questions?.[subQuestionIndex]?.examinerScript || currentQuestion.examinerScript || "Look at this picture and describe what you see:"}
+            </span>
           </h3>
           {currentQuestion.imagePath && (
             <div className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-md border-4 border-white dark:border-slate-800">

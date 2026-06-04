@@ -43,10 +43,35 @@ const QuestionSchema = new mongoose.Schema(
     type: { type: String, required: true },
     imagePath: { type: String, required: true },
     contextTags: { type: [String], default: [] },
-    examinerScript: { type: String, required: true },
+    topic: { type: String, default: "General" },
+    difficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard"],
+      default: "Medium",
+    },
+    examinerScript: { type: String, required: false },
     evaluationCriteria: {
       expectedKeywords: { type: [String], default: [] },
       targetGrammar: { type: [String], default: [] },
+    },
+    questions: {
+      type: [
+        {
+          examinerScript: { type: String, required: true },
+          expectedKeywords: { type: [String], default: [] },
+          targetGrammar: { type: [String], default: [] },
+          topic: { type: String },
+          level: {
+            type: String,
+            enum: ["Starters", "Movers", "Flyers"],
+          },
+          difficulty: {
+            type: String,
+            enum: ["Easy", "Medium", "Hard"],
+          },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true }
@@ -106,46 +131,310 @@ const mockQuestions = [
   { 
     id: "ST_P1_01", level: "Starters", part: 1, type: "Scene_Description", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-    contextTags: ["bedroom", "cat", "mat"],
+    contextTags: ["bedroom", "cat", "mat", "sleeping"],
+    topic: "Bedroom",
+    difficulty: "Easy",
     examinerScript: "Look at the picture. The cat is sleeping under the red mat.",
-    evaluationCriteria: { expectedKeywords: ["cat", "sleeping", "mat"], targetGrammar: ["present continuous"] }
+    evaluationCriteria: { expectedKeywords: ["cat", "sleeping", "mat"], targetGrammar: ["present continuous"] },
+    questions: [
+      {
+        examinerScript: "Look at the picture. Where is the cat?",
+        expectedKeywords: ["cat", "under the table", "on the floor"],
+        targetGrammar: ["prepositions", "there is"],
+        topic: "Bedroom",
+        level: "Starters",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What is the cat doing on the mat?",
+        expectedKeywords: ["cat", "sleeping", "sleeping on the mat"],
+        targetGrammar: ["present continuous"],
+        topic: "Bedroom",
+        level: "Starters",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "Where is the computer in the bedroom?",
+        expectedKeywords: ["computer", "on the desk", "desk"],
+        targetGrammar: ["prepositions"],
+        topic: "Bedroom",
+        level: "Starters",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "How many books can you see on the shelf?",
+        expectedKeywords: ["three books", "shelf", "books"],
+        targetGrammar: ["there are", "numbers"],
+        topic: "Bedroom",
+        level: "Starters",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Look at the toy train. What color is it?",
+        expectedKeywords: ["toy train", "green and yellow", "green"],
+        targetGrammar: ["adjectives", "colors"],
+        topic: "Bedroom",
+        level: "Starters",
+        difficulty: "Hard"
+      }
+    ]
   },
   { 
     id: "ST_P1_02", level: "Starters", part: 1, type: "Object_Card", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/w_200,h_200,c_fill/v1312461204/sample.jpg",
-    contextTags: ["fruit", "banana"],
+    contextTags: ["fruit", "banana", "monkey"],
+    topic: "Food",
+    difficulty: "Easy",
     examinerScript: "This is a yellow banana. Do you like bananas?",
-    evaluationCriteria: { expectedKeywords: ["banana", "yellow"], targetGrammar: [] }
+    evaluationCriteria: { expectedKeywords: ["banana", "yellow"], targetGrammar: [] },
+    questions: [
+      {
+        examinerScript: "What is this fruit?",
+        expectedKeywords: ["banana", "fruit"],
+        targetGrammar: ["there is"],
+        topic: "Food",
+        level: "Starters",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What color is the banana?",
+        expectedKeywords: ["yellow", "color"],
+        targetGrammar: ["adjectives"],
+        topic: "Food",
+        level: "Starters",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "Do you like eating bananas?",
+        expectedKeywords: ["yes I do", "no I don't", "yes", "like bananas"],
+        targetGrammar: ["present simple"],
+        topic: "Food",
+        level: "Starters",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "What is your favorite fruit for breakfast?",
+        expectedKeywords: ["apple", "orange", "grape", "watermelon"],
+        targetGrammar: ["present simple"],
+        topic: "Food",
+        level: "Starters",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Which animal loves to eat bananas in the tree?",
+        expectedKeywords: ["monkey", "monkeys"],
+        targetGrammar: ["present simple"],
+        topic: "Food",
+        level: "Starters",
+        difficulty: "Hard"
+      }
+    ]
   },
   // Movers Questions
   { 
     id: "MV_P2_01", level: "Movers", part: 2, type: "Storytelling", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-    contextTags: ["monkey", "tree", "jungle"],
+    contextTags: ["monkey", "tree", "jungle", "climbing"],
+    topic: "Animals",
+    difficulty: "Medium",
     examinerScript: "The cute monkey is climbing a tall tree.",
-    evaluationCriteria: { expectedKeywords: ["monkey", "climbing", "tree"], targetGrammar: ["present continuous"] }
+    evaluationCriteria: { expectedKeywords: ["monkey", "climbing", "tree"], targetGrammar: ["present continuous"] },
+    questions: [
+      {
+        examinerScript: "What animal is climbing the tall tree?",
+        expectedKeywords: ["monkey", "clever monkey"],
+        targetGrammar: ["present continuous"],
+        topic: "Animals",
+        level: "Movers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What is the monkey doing in the tree?",
+        expectedKeywords: ["climbing", "climbing the tree"],
+        targetGrammar: ["present continuous"],
+        topic: "Animals",
+        level: "Movers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What is the monkey holding in its hand?",
+        expectedKeywords: ["banana", "sweet banana", "fruit"],
+        targetGrammar: ["present continuous"],
+        topic: "Animals",
+        level: "Movers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Look at the bird. Where is it sitting?",
+        expectedKeywords: ["bird", "sitting on the branch", "on the branch"],
+        targetGrammar: ["prepositions", "present continuous"],
+        topic: "Animals",
+        level: "Movers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Is the sun shining in the sky?",
+        expectedKeywords: ["yes it is", "sun", "shining"],
+        targetGrammar: ["present continuous"],
+        topic: "Animals",
+        level: "Movers",
+        difficulty: "Hard"
+      }
+    ]
   },
   { 
     id: "MV_P2_02", level: "Movers", part: 2, type: "Find_Differences", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-    contextTags: ["park", "soccer"],
+    contextTags: ["park", "soccer", "playing"],
+    topic: "Playground",
+    difficulty: "Medium",
     examinerScript: "They are playing soccer in the green field. Find the difference.",
-    evaluationCriteria: { expectedKeywords: ["playing", "soccer", "field"], targetGrammar: ["present continuous"] }
+    evaluationCriteria: { expectedKeywords: ["playing", "soccer", "field"], targetGrammar: ["present continuous"] },
+    questions: [
+      {
+        examinerScript: "What game are the children playing in the park?",
+        expectedKeywords: ["soccer", "football", "playing soccer"],
+        targetGrammar: ["present continuous"],
+        topic: "Playground",
+        level: "Movers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "Where are they playing soccer?",
+        expectedKeywords: ["in the field", "on the grass", "park"],
+        targetGrammar: ["prepositions"],
+        topic: "Playground",
+        level: "Movers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "How many boys are playing soccer?",
+        expectedKeywords: ["four boys", "boys", "four"],
+        targetGrammar: ["there are", "numbers"],
+        topic: "Playground",
+        level: "Movers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "What color are the shirts of the first team?",
+        expectedKeywords: ["blue shirts", "blue", "team"],
+        targetGrammar: ["colors", "adjectives"],
+        topic: "Playground",
+        level: "Movers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Look at the girl behind the tree. What is she holding?",
+        expectedKeywords: ["a red balloon", "balloon", "red"],
+        targetGrammar: ["present continuous", "prepositions"],
+        topic: "Playground",
+        level: "Movers",
+        difficulty: "Hard"
+      }
+    ]
   },
   // Flyers Questions
   { 
     id: "FL_P3_01", level: "Flyers", part: 3, type: "Scene_Description", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-    contextTags: ["lion", "mountain"],
+    contextTags: ["lion", "mountain", "brave"],
+    topic: "Nature",
+    difficulty: "Hard",
     examinerScript: "A brave lion stands proudly on top of the mountain. Tell me more.",
-    evaluationCriteria: { expectedKeywords: ["lion", "stands", "mountain"], targetGrammar: ["present simple"] }
+    evaluationCriteria: { expectedKeywords: ["lion", "stands", "mountain"], targetGrammar: ["present simple"] },
+    questions: [
+      {
+        examinerScript: "What majestic wild animal can you see on top of the mountain?",
+        expectedKeywords: ["brave lion", "lion", "wild animal"],
+        targetGrammar: ["present simple"],
+        topic: "Nature",
+        level: "Flyers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "Where is the lion standing in this picture?",
+        expectedKeywords: ["on top of the mountain", "mountain", "peak"],
+        targetGrammar: ["prepositions", "present continuous"],
+        topic: "Nature",
+        level: "Flyers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What is the weather like in this mountainous area?",
+        expectedKeywords: ["sunny and windy", "cloudy", "windy"],
+        targetGrammar: ["adjectives", "present simple"],
+        topic: "Nature",
+        level: "Flyers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Can you see any other animals nearby?",
+        expectedKeywords: ["no I can't", "birds flying", "birds"],
+        targetGrammar: ["present simple", "modal verbs"],
+        topic: "Nature",
+        level: "Flyers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "Why do you think the lion is standing there?",
+        expectedKeywords: ["looking for food", "watching the valley", "resting"],
+        targetGrammar: ["present continuous", "conjunctions"],
+        topic: "Nature",
+        level: "Flyers",
+        difficulty: "Hard"
+      }
+    ]
   },
   { 
     id: "FL_P3_02", level: "Flyers", part: 3, type: "Storytelling", 
     imagePath: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-    contextTags: ["astronaut", "moon", "space"],
+    contextTags: ["astronaut", "moon", "space", "landed"],
+    topic: "Space",
+    difficulty: "Hard",
     examinerScript: "The astronaut successfully landed on the bright moon. Continue the story.",
-    evaluationCriteria: { expectedKeywords: ["astronaut", "landed", "moon"], targetGrammar: ["past simple"] }
+    evaluationCriteria: { expectedKeywords: ["astronaut", "landed", "moon"], targetGrammar: ["past simple"] },
+    questions: [
+      {
+        examinerScript: "Who has successfully landed on the bright moon?",
+        expectedKeywords: ["astronaut", "space traveler", "pilot"],
+        targetGrammar: ["past simple", "present perfect"],
+        topic: "Space",
+        level: "Flyers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What did the astronaut step onto when exiting the spacecraft?",
+        expectedKeywords: ["moon surface", "dusty ground", "moon"],
+        targetGrammar: ["past simple"],
+        topic: "Space",
+        level: "Flyers",
+        difficulty: "Easy"
+      },
+      {
+        examinerScript: "What object is the astronaut planting into the ground?",
+        expectedKeywords: ["national flag", "flag", "star flag"],
+        targetGrammar: ["present continuous", "past simple"],
+        topic: "Space",
+        level: "Flyers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "What can you see in the background behind the spacecraft?",
+        expectedKeywords: ["planet Earth", "blue planet", "stars", "space"],
+        targetGrammar: ["prepositions", "there is"],
+        topic: "Space",
+        level: "Flyers",
+        difficulty: "Medium"
+      },
+      {
+        examinerScript: "How do you think the astronaut feels right now?",
+        expectedKeywords: ["excited", "proud", "brave", "happy"],
+        targetGrammar: ["adjectives", "verbs of sensation"],
+        topic: "Space",
+        level: "Flyers",
+        difficulty: "Hard"
+      }
+    ]
   },
 ];
 

@@ -6,12 +6,22 @@
 interface GlobalWithAssessments {
   inMemoryAssessmentsStore?: any[];
   inMemoryQuestionsStore?: any[];
+  inMemoryContextTypesStore?: any[];
 }
 
 const g = globalThis as unknown as GlobalWithAssessments;
 
 if (!g.inMemoryAssessmentsStore) {
   g.inMemoryAssessmentsStore = [];
+}
+
+if (!g.inMemoryContextTypesStore) {
+  g.inMemoryContextTypesStore = [
+    { key: "Scene_Description", name: "Scene Description (Mô tả tranh bối cảnh)" },
+    { key: "Object_Card", name: "Object Card (Thẻ vật thể bóc tách)" },
+    { key: "Storytelling", name: "Storytelling (Kể chuyện theo tranh liên hoàn)" },
+    { key: "Find_Differences", name: "Find the Differences (Tìm điểm khác biệt)" }
+  ];
 }
 
 if (!g.inMemoryQuestionsStore) {
@@ -66,3 +76,4 @@ if (!g.inMemoryQuestionsStore) {
 
 export const inMemoryAssessments = g.inMemoryAssessmentsStore;
 export const inMemoryQuestions = g.inMemoryQuestionsStore;
+export const inMemoryContextTypes = g.inMemoryContextTypesStore || [];

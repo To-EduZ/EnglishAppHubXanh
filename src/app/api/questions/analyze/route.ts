@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
       mimeType = imageFile.type || "image/png";
     }
 
+    /*
     console.log(`🤖 [AI Auto-Digitalizer] Đang phân tích nội dung học liệu qua Llama 4 Vision...`);
 
     // 4. Query Groq Llama 4 Vision Model
@@ -171,6 +172,132 @@ You MUST respond strictly in the following JSON format:
 
     console.log("✅ [AI Auto-Digitalizer] Phân tích hoàn tất:", aiResponseContent);
     const parsedData = JSON.parse(aiResponseContent);
+    */
+
+    // 4. Query Google Gemini 2.5 Flash Model
+    console.log(`🤖 [AI Auto-Digitalizer] Đang phân tích nội dung học liệu qua Gemini 2.5 Flash...`);
+
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: "Vui lòng cấu hình GEMINI_API_KEY trong file .env.local để sử dụng tính năng số hóa AI tự động! 🔑" },
+        { status: 500 }
+      );
+    }
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+    const geminiPrompt = `You are an expert Cambridge YLE (Young Learners English - Starters, Movers, Flyers) examiner and curriculum designer for primary children.
+Your task is to analyze the uploaded exam picture (which could be a Scene Description, Object Card, Storytelling sequence, or Find the Differences) and automatically generate structured metadata matching the Cambridge YLE exam standard.
+
+Analyze the image carefully:
+1. Determine the appropriate level ('Starters', 'Movers', or 'Flyers') based on the complexity of vocabulary and objects.
+2. Determine which part of the speaking exam it matches (Part 1, Part 2, Part 3, etc.).
+3. Choose a context type: 'Scene_Description' (if it's a main scene with many activities), 'Object_Card' (if it's a single item like a banana or frog), 'Storytelling' (if it's a comic panel/sequence of scenes), or 'Find_Differences' (if it has two similar pictures).
+4. Generate a unique, short Question ID prefix based on level and part (e.g. 'ST_P1_12' for Starters Part 1, 'MV_P3_08' for Movers Part 3, 'FL_P2_05' for Flyers Part 2). Make the serial number randomly between 10 and 99 to avoid standard duplicates.
+5. Identify the main general topic (e.g. "Family", "Animals", "School life", "Classroom", "Nature", "Home", "Playground", "Food", "Hobbies", "Transport").
+6. Determine the overall difficulty level of this question block ('Easy', 'Medium', or 'Hard').
+7. Provide a list of 'contextTags' describing elements of the image (e.g. ["bedroom", "cat", "animals", "sleeping", "boy"]).
+8. Generate EXACTLY 5 interactive sub-questions (questions array) for this single image/context. The sub-questions must progress in difficulty and focus on different elements/objects in the image.
+   - For each sub-question:
+     - Provide a professional, friendly, child-appropriate 'examinerScript' (what the AI examiner will ask the student in English). Keep sentences simple and use standard YLE prompts.
+     - Determine 'expectedKeywords' (the critical English vocabulary the child is expected to say in response).
+     - Determine 'targetGrammar' structures (e.g., ["present continuous", "prepositions", "there is", "there are"]).
+     - Add 'topic' (use the main general topic).
+     - Add 'level' (use the main level).
+     - Add 'difficulty' ('Easy' for question 1 and 2, 'Medium' for question 3 and 4, 'Hard' for question 5 to represent progressive difficulty).
+
+You MUST respond strictly in the following JSON format:
+{
+  "id": "ST_P1_XY or MV_P3_XY or FL_P2_XY",
+  "level": "Starters" | "Movers" | "Flyers",
+  "part": number (1 to 5),
+  "type": "Scene_Description" | "Object_Card" | "Storytelling" | "Find_Differences",
+  "topic": "string",
+  "difficulty": "Easy" | "Medium" | "Hard",
+  "contextTags": ["tag1", "tag2", "tag3"],
+  "questions": [
+    {
+      "examinerScript": "Examiner question in English",
+      "expectedKeywords": ["keyword1", "keyword2"],
+      "targetGrammar": ["grammar1"],
+      "topic": "string",
+      "level": "Starters" | "Movers" | "Flyers",
+      "difficulty": "Easy" | "Medium" | "Hard"
+    }
+  ]
+}`;
+
+    const geminiPayload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: geminiPrompt
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Image
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    };
+
+    const geminiResponse = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(geminiPayload)
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
+    }
+
+    const geminiData = await geminiResponse.json();
+    const aiResponseContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!aiResponseContent) {
+      throw new Error("Gemini Vision trả về phản hồi rỗng.");
+    }
+
+    console.log("✅ [AI Auto-Digitalizer] Phân tích Gemini hoàn tất:", aiResponseContent);
+    const parsedData = JSON.parse(aiResponseContent);
+
+    // Keep backwards compatibility for old components by copying the first sub-question to the top level
+    if (parsedData.questions && parsedData.questions.length > 0) {
+      parsedData.examinerScript = parsedData.questions[0].examinerScript;
+      parsedData.expectedKeywords = parsedData.questions[0].expectedKeywords;
+      parsedData.targetGrammar = parsedData.questions[0].targetGrammar;
+    } else {
+      parsedData.questions = [];
+      parsedData.examinerScript = "";
+      parsedData.expectedKeywords = [];
+      parsedData.targetGrammar = [];
+    }
+    if (!parsedData.topic) {
+      parsedData.topic = "General";
+    }
+    if (!parsedData.difficulty) {
+      parsedData.difficulty = "Medium";
+    }
+
+    // Populate sub-question fields
+    if (parsedData.questions && parsedData.questions.length > 0) {
+      parsedData.questions.forEach((q: any, idx: number) => {
+        if (!q.topic) q.topic = parsedData.topic;
+        if (!q.level) q.level = parsedData.level || "Starters";
+        if (!q.difficulty) {
+          q.difficulty = idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard";
+        }
+      });
+    }
 
     // Ensure the generated ID is unique
     let baseId = parsedData.id || "ST_P1_01";

@@ -31,12 +31,31 @@ interface QuestionData {
   type: string;
   imagePath: string;
   contextTags: string[];
+  topic?: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
   examinerScript: string;
   evaluationCriteria: {
     expectedKeywords: string[];
     targetGrammar: string[];
   };
+  questions?: {
+    examinerScript: string;
+    expectedKeywords: string[];
+    targetGrammar: string[];
+    topic?: string;
+    level?: "Starters" | "Movers" | "Flyers";
+    difficulty?: "Easy" | "Medium" | "Hard";
+  }[];
   createdAt: string;
+}
+
+interface SubQuestionInput {
+  examinerScript: string;
+  expectedKeywords: string;
+  targetGrammar: string;
+  topic?: string;
+  level?: "Starters" | "Movers" | "Flyers" | "";
+  difficulty?: "Easy" | "Medium" | "Hard" | "";
 }
 
 export default function CambridgeImportPage() {
@@ -58,10 +77,19 @@ export default function CambridgeImportPage() {
   const [part, setPart] = useState("1");
   const [type, setType] = useState("Scene_Description");
   const [customType, setCustomType] = useState("");
+  const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
   const [examinerScript, setExaminerScript] = useState("");
   const [contextTags, setContextTags] = useState("");
   const [expectedKeywords, setExpectedKeywords] = useState("");
   const [targetGrammar, setTargetGrammar] = useState("");
+  const [subQuestions, setSubQuestions] = useState<SubQuestionInput[]>([
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" }
+  ]);
   
   // Image file & preview states
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -179,10 +207,19 @@ export default function CambridgeImportPage() {
     setPart("1");
     setType("Scene_Description");
     setCustomType("");
+    setTopic("");
+    setDifficulty("Medium");
     setExaminerScript("");
     setContextTags("");
     setExpectedKeywords("");
     setTargetGrammar("");
+    setSubQuestions([
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" }
+    ]);
     removeImage();
     setIsEditing(false);
     setEditingId("");
@@ -205,11 +242,45 @@ export default function CambridgeImportPage() {
       setCustomType(q.type);
     }
     
-    setExaminerScript(q.examinerScript);
+    setTopic(q.topic || "General");
+    setDifficulty(q.difficulty || "Medium");
+    setExaminerScript(q.examinerScript || "");
     setContextTags(q.contextTags ? q.contextTags.join(", ") : "");
     setExpectedKeywords(q.evaluationCriteria?.expectedKeywords ? q.evaluationCriteria.expectedKeywords.join(", ") : "");
     setTargetGrammar(q.evaluationCriteria?.targetGrammar ? q.evaluationCriteria.targetGrammar.join(", ") : "");
     
+    // Load sub-questions array
+    if (q.questions && q.questions.length > 0) {
+      const mapped: SubQuestionInput[] = q.questions.map((sub) => ({
+        examinerScript: sub.examinerScript || "",
+        expectedKeywords: sub.expectedKeywords ? sub.expectedKeywords.join(", ") : "",
+        targetGrammar: sub.targetGrammar ? sub.targetGrammar.join(", ") : "",
+        topic: sub.topic || "",
+        level: (sub.level || "") as any,
+        difficulty: (sub.difficulty || "") as any
+      }));
+      while (mapped.length < 5) {
+        mapped.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
+      }
+      setSubQuestions(mapped.slice(0, 5));
+    } else {
+      // Fallback
+      const initial: SubQuestionInput[] = [
+        {
+          examinerScript: q.examinerScript || "",
+          expectedKeywords: q.evaluationCriteria?.expectedKeywords ? q.evaluationCriteria.expectedKeywords.join(", ") : "",
+          targetGrammar: q.evaluationCriteria?.targetGrammar ? q.evaluationCriteria.targetGrammar.join(", ") : "",
+          topic: "",
+          level: "",
+          difficulty: ""
+        }
+      ];
+      while (initial.length < 5) {
+        initial.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
+      }
+      setSubQuestions(initial);
+    }
+
     setImageFile(null);
     setImagePreview(q.imagePath); // display current Cloudinary URL
     
@@ -284,10 +355,49 @@ export default function CambridgeImportPage() {
           setCustomType(item.type || "");
         }
         
-        setExaminerScript(item.examinerScript || "");
+        setTopic(item.topic || "General");
+        setDifficulty(item.difficulty || "Medium");
         setContextTags(item.contextTags ? item.contextTags.join(", ") : "");
-        setExpectedKeywords(item.expectedKeywords ? item.expectedKeywords.join(", ") : "");
-        setTargetGrammar(item.targetGrammar ? item.targetGrammar.join(", ") : "");
+        
+        // Auto fill sub questions list
+        if (item.questions && item.questions.length > 0) {
+          const mappedQuestions: SubQuestionInput[] = item.questions.map((sub: any) => ({
+            examinerScript: sub.examinerScript || "",
+            expectedKeywords: sub.expectedKeywords ? sub.expectedKeywords.join(", ") : "",
+            targetGrammar: sub.targetGrammar ? sub.targetGrammar.join(", ") : "",
+            topic: sub.topic || "",
+            level: (sub.level || "") as any,
+            difficulty: (sub.difficulty || "") as any
+          }));
+          while (mappedQuestions.length < 5) {
+            mappedQuestions.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
+          }
+          setSubQuestions(mappedQuestions.slice(0, 5));
+
+          // Also set fallback top levels
+          setExaminerScript(mappedQuestions[0]?.examinerScript || "");
+          setExpectedKeywords(mappedQuestions[0]?.expectedKeywords || "");
+          setTargetGrammar(mappedQuestions[0]?.targetGrammar || "");
+        } else {
+          setExaminerScript(item.examinerScript || "");
+          setExpectedKeywords(item.expectedKeywords ? item.expectedKeywords.join(", ") : "");
+          setTargetGrammar(item.targetGrammar ? item.targetGrammar.join(", ") : "");
+          
+          const initial: SubQuestionInput[] = [
+            {
+              examinerScript: item.examinerScript || "",
+              expectedKeywords: item.expectedKeywords ? item.expectedKeywords.join(", ") : "",
+              targetGrammar: item.targetGrammar ? item.targetGrammar.join(", ") : "",
+              topic: "",
+              level: "",
+              difficulty: ""
+            }
+          ];
+          while (initial.length < 5) {
+            initial.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
+          }
+          setSubQuestions(initial);
+        }
 
         showToast("success", "AI đã phân tích ảnh bóc tách và tự động điền đầy đủ siêu dữ liệu cực chuẩn Cambridge! Bạn hãy kiểm tra lại và nhấn nút lưu nhé! ✨🤖");
       }
@@ -308,10 +418,13 @@ export default function CambridgeImportPage() {
       showToast("error", "Bé/Admin ơi, hãy nhập mã ID duy nhất cho học liệu nhé!");
       return;
     }
-    if (!examinerScript.trim()) {
-      showToast("error", "Admin vui lòng nhập kịch bản phát âm của Giám khảo AI!");
+    
+    const filledQuestions = subQuestions.filter(q => q.examinerScript.trim() !== "");
+    if (filledQuestions.length === 0) {
+      showToast("error", "Admin vui lòng nhập ít nhất kịch bản cho 1 câu hỏi con!");
       return;
     }
+    
     if (!imageFile && !imagePreview) {
       showToast("error", "Admin cần tải lên hình ảnh bóc tách cắt từ tệp PDF đề thi!");
       return;
@@ -334,11 +447,25 @@ export default function CambridgeImportPage() {
       
       const finalType = type === "Custom" ? customType.trim() : type;
       formData.append("type", finalType || "Scene_Description");
-      
-      formData.append("examinerScript", examinerScript.trim());
+      formData.append("topic", topic.trim() || "General");
+      formData.append("difficulty", difficulty);
       formData.append("contextTags", contextTags.trim());
-      formData.append("expectedKeywords", expectedKeywords.trim());
-      formData.append("targetGrammar", targetGrammar.trim());
+      
+      const parsedSubQuestions = subQuestions.map((q, idx) => ({
+        examinerScript: q.examinerScript.trim(),
+        expectedKeywords: q.expectedKeywords.split(",").map(s => s.trim()).filter(Boolean),
+        targetGrammar: q.targetGrammar.split(",").map(s => s.trim()).filter(Boolean),
+        topic: q.topic?.trim() || topic.trim() || "General",
+        level: q.level || level || "Starters",
+        difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard")
+      }));
+      formData.append("questions", JSON.stringify(parsedSubQuestions));
+      
+      // Top level fallbacks for backwards compatibility
+      const firstQ = filledQuestions[0];
+      formData.append("examinerScript", firstQ.examinerScript.trim());
+      formData.append("expectedKeywords", firstQ.expectedKeywords.trim());
+      formData.append("targetGrammar", firstQ.targetGrammar.trim());
       
       if (imageFile) {
         formData.append("image", imageFile);
@@ -563,8 +690,8 @@ export default function CambridgeImportPage() {
 
               </div>
 
-              {/* Row 2: Type, Custom Type */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Row 2: Type, Topic & Difficulty */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="type">
                     Loại bối cảnh học liệu <span className="text-rose-500">*</span>
@@ -583,44 +710,56 @@ export default function CambridgeImportPage() {
                   </select>
                 </div>
 
-                {type === "Custom" && (
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="customType">
-                      Nhập loại bối cảnh tùy chỉnh <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      id="customType"
-                      type="text"
-                      required
-                      value={customType}
-                      onChange={(e) => setCustomType(e.target.value)}
-                      placeholder="Ví dụ: Picture_Matching"
-                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 animate-pulse"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Row 3: Examiner Script */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide" htmlFor="script">
-                    Kịch bản câu hỏi của Giám khảo AI <span className="text-rose-500">*</span>
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="topic">
+                    Chủ đề học liệu (Topic) <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Giám khảo AI sẽ đọc/phát âm đoạn này</span>
+                  <input
+                    id="topic"
+                    type="text"
+                    required
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="Ví dụ: Family, Animals, School life..."
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                  />
                 </div>
-                <textarea
-                  id="script"
-                  required
-                  rows={3}
-                  value={examinerScript}
-                  onChange={(e) => setExaminerScript(e.target.value)}
-                  placeholder="Ví dụ: Look at this scene. Here is a family on the beach. Where is the boy? What is the dog doing?"
-                  className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3.5 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 resize-none font-sans"
-                />
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="difficulty">
+                    Độ khó (Difficulty) <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    id="difficulty"
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as any)}
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+                  >
+                    <option value="Easy">Easy (Dễ)</option>
+                    <option value="Medium">Medium (Trung bình)</option>
+                    <option value="Hard">Hard (Khó)</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Row 4: Context Tags */}
+              {type === "Custom" && (
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="customType">
+                    Nhập loại bối cảnh tùy chỉnh <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    id="customType"
+                    type="text"
+                    required
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    placeholder="Ví dụ: Picture_Matching"
+                    className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 animate-pulse"
+                  />
+                </div>
+              )}
+
+              {/* Row 3: Context Tags */}
               <div>
                 <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="tags">
                   Từ khóa bối cảnh (Context Tags)
@@ -636,44 +775,130 @@ export default function CambridgeImportPage() {
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">Cách nhau bằng dấu phẩy (,)</span>
               </div>
 
-              {/* Evaluation criteria: Expected keywords, Target Grammar */}
-              <div className="bg-slate-50/70 dark:bg-slate-800/40 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-inner">
-                <h4 className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-emerald-500" />
-                  Tiêu chí chấm điểm của Trí tuệ Nhân tạo (AI Grading Criteria)
+              {/* Row 4: Speaking Questions Editor (5 Dynamic Question blocks) */}
+              <div className="flex flex-col gap-5 border-t border-slate-100 pt-5 mt-2">
+                <h4 className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Danh sách 5 Câu hỏi Speaking trên cùng Bối cảnh
                 </h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="keywords">
-                      Từ khóa dự kiến có (Expected Keywords)
-                    </label>
-                    <input
-                      id="keywords"
-                      type="text"
-                      value={expectedKeywords}
-                      onChange={(e) => setExpectedKeywords(e.target.value)}
-                      placeholder="beach, dog, running, coconut, ball"
-                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors"
-                    />
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">Từ khóa tối thiểu học viên cần đọc chuẩn</span>
-                  </div>
+                {subQuestions.map((q, idx) => (
+                  <div key={idx} className="bg-slate-50/50 dark:bg-slate-800/30 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-sm relative">
+                    <span className="absolute -top-3 left-4 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">
+                      Câu hỏi {idx + 1}
+                    </span>
+                    
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs mb-1.5">
+                        Kịch bản của Giám khảo AI (English Question) {idx === 0 && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        required={idx === 0}
+                        value={q.examinerScript}
+                        onChange={(e) => {
+                          const updated = [...subQuestions];
+                          updated[idx].examinerScript = e.target.value;
+                          setSubQuestions(updated);
+                        }}
+                        placeholder={`Ví dụ câu hỏi ${idx + 1}: Where is the cat? / What is the boy doing?`}
+                        className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-xs font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-xs uppercase tracking-wide mb-1.5" htmlFor="grammar">
-                      Cấu trúc đích (Target Grammar)
-                    </label>
-                    <input
-                      id="grammar"
-                      type="text"
-                      value={targetGrammar}
-                      onChange={(e) => setTargetGrammar(e.target.value)}
-                      placeholder="present continuous, there is, there are, behind, under"
-                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors"
-                    />
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">Các giới từ, thì ngữ pháp ưu tiên để AI phát hiện</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                          Từ khóa chấm điểm (Expected Keywords)
+                        </label>
+                        <input
+                          type="text"
+                          value={q.expectedKeywords}
+                          onChange={(e) => {
+                            const updated = [...subQuestions];
+                            updated[idx].expectedKeywords = e.target.value;
+                            setSubQuestions(updated);
+                          }}
+                          placeholder="Từ khóa cách nhau bằng dấu phẩy (,)"
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                          Cấu trúc ngữ pháp đích (Target Grammar)
+                        </label>
+                        <input
+                          type="text"
+                          value={q.targetGrammar}
+                          onChange={(e) => {
+                            const updated = [...subQuestions];
+                            updated[idx].targetGrammar = e.target.value;
+                            setSubQuestions(updated);
+                          }}
+                          placeholder="Mẫu ngữ pháp cách nhau bằng dấu phẩy (,)"
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                          Chủ đề câu hỏi (Topic override)
+                        </label>
+                        <input
+                          type="text"
+                          value={q.topic}
+                          onChange={(e) => {
+                            const updated = [...subQuestions];
+                            updated[idx].topic = e.target.value;
+                            setSubQuestions(updated);
+                          }}
+                          placeholder="Mặc định dùng chủ đề chung"
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                          Cấp độ (Level override)
+                        </label>
+                        <select
+                          value={q.level}
+                          onChange={(e) => {
+                            const updated = [...subQuestions];
+                            updated[idx].level = e.target.value as any;
+                            setSubQuestions(updated);
+                          }}
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+                        >
+                          <option value="">Dùng cấp độ chung</option>
+                          <option value="Starters">Starters 🦛</option>
+                          <option value="Movers">Movers 🐒</option>
+                          <option value="Flyers">Flyers 🦁</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                          Độ khó (Difficulty override)
+                        </label>
+                        <select
+                          value={q.difficulty}
+                          onChange={(e) => {
+                            const updated = [...subQuestions];
+                            updated[idx].difficulty = e.target.value as any;
+                            setSubQuestions(updated);
+                          }}
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+                        >
+                          <option value="">Dùng độ khó chung</option>
+                          <option value="Easy">Easy (Dễ)</option>
+                          <option value="Medium">Medium (Trung bình)</option>
+                          <option value="Hard">Hard (Khó)</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
 
               {/* Mobile image selector (shows up here only on smaller screens) */}
@@ -957,8 +1182,10 @@ export default function CambridgeImportPage() {
                     <th className="py-4 px-4 text-xs font-black uppercase w-20">Ảnh bóc tách</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-24">Mã ID</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-24">Cấp độ</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase w-20 text-center">Độ khó</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-16 text-center">Part</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-32">Loại bối cảnh</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase w-28">Chủ đề</th>
                     <th className="py-4 px-4 text-xs font-black uppercase">Kịch bản Giám khảo AI</th>
                     <th className="py-4 px-4 text-xs font-black uppercase w-48">Tiêu chí chấm điểm</th>
                     <th className="py-4 px-4 text-xs font-black uppercase text-center w-36">Hành động</th>
@@ -1002,6 +1229,18 @@ export default function CambridgeImportPage() {
                           </span>
                         </td>
 
+                        <td className="py-4 px-4 w-20 text-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-black uppercase rounded-md border ${
+                            q.difficulty === "Easy"
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-300"
+                              : q.difficulty === "Hard"
+                              ? "bg-rose-100 text-rose-700 border-rose-300"
+                              : "bg-amber-100 text-amber-700 border-amber-300"
+                          }`}>
+                            {q.difficulty || "Medium"}
+                          </span>
+                        </td>
+
                         <td className="py-4 px-4 text-center font-extrabold text-slate-800 dark:text-slate-255 w-16">
                           {q.part}
                         </td>
@@ -1010,35 +1249,67 @@ export default function CambridgeImportPage() {
                           {(q.type || "").replace(/_/g, " ")}
                         </td>
 
-                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xs md:max-w-sm truncate" title={q.examinerScript}>
-                          "{q.examinerScript}"
+                        <td className="py-4 px-4 text-slate-750 dark:text-slate-350 font-black w-28 truncate max-w-[110px]" title={q.topic || "General"}>
+                          {q.topic || "General"}
+                        </td>
+
+                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xs md:max-w-sm" title={q.examinerScript}>
+                          {q.questions && q.questions.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="truncate max-w-[200px]" title={q.questions[0].examinerScript}>
+                                1. {q.questions[0].examinerScript}
+                              </span>
+                              {q.questions.length > 1 && (
+                                <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-black bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full w-max border border-indigo-100 dark:border-indigo-800">
+                                  +{q.questions.length - 1} câu hỏi con
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="truncate max-w-[200px] block">"{q.examinerScript}"</span>
+                          )}
                         </td>
 
                         <td className="py-4 px-4 w-48 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 font-sans">
-                          {q.evaluationCriteria.expectedKeywords.length > 0 && (
-                            <div>
-                              <strong className="text-slate-500">Keywords:</strong>{" "}
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
-                                {q.evaluationCriteria.expectedKeywords.join(", ")}
-                              </span>
-                            </div>
-                          )}
-                          {q.evaluationCriteria.targetGrammar.length > 0 && (
-                            <div className="mt-1">
-                              <strong className="text-slate-500">Grammar:</strong>{" "}
-                              <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">
-                                {q.evaluationCriteria.targetGrammar.join(", ")}
-                              </span>
-                            </div>
-                          )}
-                          {q.contextTags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-0.5 items-center">
-                              <Tag className="w-2.5 h-2.5 text-slate-400" />
-                              <span className="italic text-[9px] font-bold text-slate-400">
-                                {q.contextTags.join(", ")}
-                              </span>
-                            </div>
-                          )}
+                          {(() => {
+                            let keywordsShow: string[] = [];
+                            let grammarShow: string[] = [];
+                            if (q.questions && q.questions.length > 0) {
+                              keywordsShow = q.questions[0].expectedKeywords || [];
+                              grammarShow = q.questions[0].targetGrammar || [];
+                            } else {
+                              keywordsShow = q.evaluationCriteria?.expectedKeywords || [];
+                              grammarShow = q.evaluationCriteria?.targetGrammar || [];
+                            }
+                            return (
+                              <>
+                                {keywordsShow.length > 0 && (
+                                  <div>
+                                    <strong className="text-slate-500">Keywords:</strong>{" "}
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
+                                      {keywordsShow.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+                                {grammarShow.length > 0 && (
+                                  <div className="mt-1">
+                                    <strong className="text-slate-500">Grammar:</strong>{" "}
+                                    <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/40 px-1 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">
+                                      {grammarShow.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+                                {q.contextTags && q.contextTags.length > 0 && (
+                                  <div className="mt-1 flex flex-wrap gap-0.5 items-center">
+                                    <Tag className="w-2.5 h-2.5 text-slate-400" />
+                                    <span className="italic text-[9px] font-bold text-slate-400">
+                                      {q.contextTags.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </td>
 
                         <td className="py-4 px-4 w-36 text-center align-middle">

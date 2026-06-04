@@ -88,29 +88,69 @@ BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "
 VÀ BẮT BUỘC set "stageComplete": true. KHÔNG ĐƯỢC HỎI THÊM BẤT KỲ CÂU NÀO KHÁC.`;
       }
     } else if (stage === "picture") {
-      const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
-      const keywords = context.expectedKeywords ? context.expectedKeywords.join(", ") : "";
       const pictureIndex = context.pictureIndex || 0;
+      const subQuestionIndex = typeof context.subQuestionIndex === "number" ? context.subQuestionIndex : 0;
+      const questions = context.questions || [];
       
-      if (aiMessageCount >= 2) {
-         if (pictureIndex === 0) {
-           systemPrompt += `
+      if (questions && questions.length > 0) {
+        // New flow: loop over the 5 sub-questions
+        const currentSubQ = questions[subQuestionIndex] || {};
+        const nextSubQ = questions[subQuestionIndex + 1];
+        const keywords = currentSubQ.expectedKeywords ? currentSubQ.expectedKeywords.join(", ") : "";
+        const grammar = currentSubQ.targetGrammar ? currentSubQ.targetGrammar.join(", ") : "";
+
+        if (subQuestionIndex < questions.length - 1 && nextSubQ) {
+          systemPrompt += `
+Nhiệm vụ: Miêu tả tranh (Picture Description) cho Bức Tranh Thứ ${pictureIndex === 0 ? "Nhất" : "Hai"}.
+Học sinh vừa trả lời câu hỏi: "${currentSubQ.examinerScript}".
+Các từ khóa bé nên dùng trong câu trả lời: [${keywords}]. Mẫu ngữ pháp mong đợi: [${grammar}].
+Hãy nhận xét ngắn gọn và khích lệ câu trả lời của bé (khen ngợi nếu bé sử dụng đúng từ khóa/ngữ pháp). Sau đó hỏi câu hỏi tiếp theo để bé trả lời: "${nextSubQ.examinerScript}".
+BẮT BUỘC set "stageComplete": false.`;
+        } else {
+          // Last question of this picture
+          if (pictureIndex === 0) {
+            systemPrompt += `
+Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ NHẤT.
+Bé vừa trả lời câu hỏi cuối cùng: "${currentSubQ.examinerScript}".
+Các từ khóa bé nên dùng trong câu trả lời: [${keywords}].
+Hãy nhận xét ngắn gọn câu trả lời của bé.
+BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY Ở CUỐI PHẢN HỒI CỦA BẠN (trong "aiResponse"): "Great job with the first picture! Now let's look at a second picture."
+VÀ BẮT BUỘC set "stageComplete": true.`;
+          } else {
+            systemPrompt += `
+Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ HAI (hoàn thành Stage 2).
+Bé vừa trả lời câu hỏi cuối cùng: "${currentSubQ.examinerScript}".
+Các từ khóa bé nên dùng trong câu trả lời: [${keywords}].
+Hãy nhận xét ngắn gọn câu trả lời của bé.
+BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY Ở CUỐI PHẢN HỒI CỦA BẠN (trong "aiResponse"): "Excellent! You did a great job with both pictures. Now, let's read a short story together."
+VÀ BẮT BUỘC set "stageComplete": true.`;
+          }
+        }
+      } else {
+        // Legacy fallback: 2-turn probing per picture
+        const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
+        const keywords = context.expectedKeywords ? context.expectedKeywords.join(", ") : "";
+        
+        if (aiMessageCount >= 2) {
+           if (pictureIndex === 0) {
+             systemPrompt += `
 Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ NHẤT.
 BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Great job with the first picture! Now let's look at a second picture."
 VÀ BẮT BUỘC set "stageComplete": true.`;
-         } else {
-           systemPrompt += `
+           } else {
+             systemPrompt += `
 Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ HAI (hoàn thành Stage 2).
 BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Excellent! You did a great job with both pictures. Now, let's read a short story together."
 VÀ BẮT BUỘC set "stageComplete": true.`;
-         }
-      } else {
-         systemPrompt += `
+           }
+        } else {
+           systemPrompt += `
 Nhiệm vụ: Miêu tả tranh (Picture Description) cho Bức Tranh Thứ ${pictureIndex === 0 ? "Nhất" : "Hai"}.
 Học sinh đang nhìn một bức tranh có các từ khóa cần nói: [${keywords}].
 Hãy kiểm tra xem học sinh đã nói được các từ khóa nào chưa. Khen ngợi học sinh.
 Nếu còn từ khóa chưa nói, hãy đặt 1 câu hỏi gợi ý thật đơn giản để bé nói ra từ đó (ví dụ: "What is this?" hoặc "What is it doing?").
 BẮT BUỘC set "stageComplete": false.`;
+        }
       }
     } else if (stage === "reading") {
       systemPrompt += `

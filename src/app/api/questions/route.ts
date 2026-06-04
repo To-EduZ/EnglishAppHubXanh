@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const level = searchParams.get("level");
     const partStr = searchParams.get("part");
+    const topic = searchParams.get("topic");
 
     const filter: any = {};
     if (level) {
@@ -39,6 +40,10 @@ export async function GET(req: NextRequest) {
       if (!isNaN(part)) {
         filter.part = part;
       }
+    }
+
+    if (topic) {
+      filter.topic = { $regex: new RegExp(topic, "i") }; // Case-insensitive matching
     }
 
     const questions = await Question.find(filter).sort({ createdAt: -1 });
@@ -87,17 +92,20 @@ export async function POST(req: NextRequest) {
     // 3. Extract request parameters
     const formData = await req.formData();
     const id = formData.get("id") as string;
-    const level = formData.get("level") as string;
+    const level = formData.get("level") as "Starters" | "Movers" | "Flyers";
     const partStr = formData.get("part") as string;
     const type = formData.get("type") as string;
+    const topic = (formData.get("topic") as string) || "General";
+    const difficulty = ((formData.get("difficulty") as string) || "Medium") as "Easy" | "Medium" | "Hard";
     const examinerScript = formData.get("examinerScript") as string;
     const contextTagsRaw = formData.get("contextTags") as string;
     const expectedKeywordsRaw = formData.get("expectedKeywords") as string;
     const targetGrammarRaw = formData.get("targetGrammar") as string;
+    const questionsRaw = formData.get("questions") as string;
     const imageFile = formData.get("image") as File | null;
 
-    // 4. Validate parameters
-    if (!id || !level || !partStr || !type || !examinerScript || !imageFile) {
+    // 4. Validate parameters (partStr is optional, inferred from ID or defaults to 1)
+    if (!id || !level || !type || !imageFile) {
       return NextResponse.json(
         { error: "Vui lòng nhập đầy đủ các trường dữ liệu bắt buộc và chọn tệp ảnh minh họa!" },
         { status: 400 }
@@ -117,7 +125,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const part = parseInt(partStr, 10);
+    let part = 1;
+    if (partStr) {
+      part = parseInt(partStr, 10);
+    } else if (id) {
+      const match = id.match(/_P(\d+)_/i);
+      if (match) {
+        part = parseInt(match[1], 10);
+      }
+    }
     if (isNaN(part)) {
       return NextResponse.json(
         { error: "Số phần thi (Part) phải là một số nguyên hợp lệ!" },
@@ -184,6 +200,39 @@ export async function POST(req: NextRequest) {
       imagePath = imagePath.replace(/\.pdf$/, ".png").replace("/image/upload/", "/image/upload/pg_1/");
     }
 
+    // Parse questions list from JSON string if provided
+    let questionsList = [];
+    if (questionsRaw) {
+      try {
+        questionsList = JSON.parse(questionsRaw);
+      } catch (e) {
+        console.error("Lỗi parse questions list:", e);
+      }
+    }
+
+    // Fallback if questions list is empty but individual examinerScript is provided
+    if (questionsList.length === 0 && examinerScript) {
+      questionsList = [
+        {
+          examinerScript,
+          expectedKeywords,
+          targetGrammar,
+        },
+      ];
+    }
+
+    // Ensure each sub-question has level, topic, and difficulty
+    if (questionsList && questionsList.length > 0) {
+      questionsList = questionsList.map((q: any, idx: number) => ({
+        examinerScript: q.examinerScript || "",
+        expectedKeywords: q.expectedKeywords || [],
+        targetGrammar: q.targetGrammar || [],
+        topic: q.topic || topic || "General",
+        level: q.level || level || "Starters",
+        difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard"),
+      }));
+    }
+
     // 8. Create Question document and save to database
     const newQuestion = new Question({
       id,
@@ -192,11 +241,14 @@ export async function POST(req: NextRequest) {
       type,
       imagePath,
       contextTags,
-      examinerScript,
+      topic,
+      difficulty,
+      examinerScript: examinerScript || (questionsList[0]?.examinerScript || ""),
       evaluationCriteria: {
-        expectedKeywords,
-        targetGrammar,
+        expectedKeywords: expectedKeywords || (questionsList[0]?.expectedKeywords || []),
+        targetGrammar: targetGrammar || (questionsList[0]?.targetGrammar || []),
       },
+      questions: questionsList,
     });
 
     await newQuestion.save();
@@ -230,23 +282,34 @@ export async function PUT(req: NextRequest) {
 
     const formData = await req.formData();
     const id = formData.get("id") as string;
-    const level = formData.get("level") as string;
+    const level = formData.get("level") as "Starters" | "Movers" | "Flyers";
     const partStr = formData.get("part") as string;
     const type = formData.get("type") as string;
+    const topic = (formData.get("topic") as string) || "General";
+    const difficulty = ((formData.get("difficulty") as string) || "Medium") as "Easy" | "Medium" | "Hard";
     const examinerScript = formData.get("examinerScript") as string;
     const contextTagsRaw = formData.get("contextTags") as string;
     const expectedKeywordsRaw = formData.get("expectedKeywords") as string;
     const targetGrammarRaw = formData.get("targetGrammar") as string;
+    const questionsRaw = formData.get("questions") as string;
     const imageFile = formData.get("image") as File | null;
 
-    if (!id || !level || !partStr || !type || !examinerScript) {
+    if (!id || !level || !type) {
       return NextResponse.json(
         { error: "Vui lòng cung cấp đầy đủ các trường dữ liệu bắt buộc!" },
         { status: 400 }
       );
     }
 
-    const part = parseInt(partStr, 10);
+    let part = 1;
+    if (partStr) {
+      part = parseInt(partStr, 10);
+    } else if (id) {
+      const match = id.match(/_P(\d+)_/i);
+      if (match) {
+        part = parseInt(match[1], 10);
+      }
+    }
     if (isNaN(part)) {
       return NextResponse.json(
         { error: "Số phần thi (Part) phải là một số nguyên hợp lệ!" },
@@ -322,17 +385,53 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    // Parse questions list
+    let questionsList = [];
+    if (questionsRaw) {
+      try {
+        questionsList = JSON.parse(questionsRaw);
+      } catch (e) {
+        console.error("Lỗi parse questions list:", e);
+      }
+    }
+
+    // Fallback if questions list is empty but individual examinerScript is provided
+    if (questionsList.length === 0 && examinerScript) {
+      questionsList = [
+        {
+          examinerScript,
+          expectedKeywords,
+          targetGrammar,
+        },
+      ];
+    }
+
+    // Ensure each sub-question has level, topic, and difficulty
+    if (questionsList && questionsList.length > 0) {
+      questionsList = questionsList.map((q: any, idx: number) => ({
+        examinerScript: q.examinerScript || "",
+        expectedKeywords: q.expectedKeywords || [],
+        targetGrammar: q.targetGrammar || [],
+        topic: q.topic || topic || "General",
+        level: q.level || level || "Starters",
+        difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard"),
+      }));
+    }
+
     // Apply updates
     existingQuestion.level = level as any;
     existingQuestion.part = part;
     existingQuestion.type = type;
     existingQuestion.imagePath = imagePath;
     existingQuestion.contextTags = contextTags;
-    existingQuestion.examinerScript = examinerScript;
+    existingQuestion.topic = topic;
+    existingQuestion.difficulty = difficulty;
+    existingQuestion.examinerScript = examinerScript || (questionsList[0]?.examinerScript || "");
     existingQuestion.evaluationCriteria = {
-      expectedKeywords,
-      targetGrammar,
+      expectedKeywords: expectedKeywords || (questionsList[0]?.expectedKeywords || []),
+      targetGrammar: targetGrammar || (questionsList[0]?.targetGrammar || []),
     };
+    existingQuestion.questions = questionsList;
 
     await existingQuestion.save();
 

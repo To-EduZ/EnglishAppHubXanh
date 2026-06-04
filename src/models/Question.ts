@@ -7,11 +7,21 @@ export interface IQuestion extends Document {
   type: string; // e.g. "Scene_Description", "Object_Card", "Storytelling"
   imagePath: string; // Cloudinary secure URL
   contextTags: string[];
-  examinerScript: string;
-  evaluationCriteria: {
+  topic: string; // Added for Topic Tagging
+  difficulty: "Easy" | "Medium" | "Hard"; // Added for Difficulty assessment
+  examinerScript?: string; // Optional for backward compatibility
+  evaluationCriteria?: {
     expectedKeywords: string[];
     targetGrammar: string[];
-  };
+  }; // Optional for backward compatibility
+  questions: {
+    examinerScript: string;
+    expectedKeywords: string[];
+    targetGrammar: string[];
+    topic?: string; // Added at sub-question level
+    level?: "Starters" | "Movers" | "Flyers"; // Added at sub-question level
+    difficulty?: "Easy" | "Medium" | "Hard"; // Added at sub-question level
+  }[]; // Added for One Context - Multiple Questions
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,10 +38,35 @@ const QuestionSchema: Schema<IQuestion> = new Schema(
     type: { type: String, required: true },
     imagePath: { type: String, required: true },
     contextTags: { type: [String], default: [] },
-    examinerScript: { type: String, required: true },
+    topic: { type: String, default: "General" },
+    difficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard"],
+      default: "Medium",
+    },
+    examinerScript: { type: String, required: false },
     evaluationCriteria: {
       expectedKeywords: { type: [String], default: [] },
       targetGrammar: { type: [String], default: [] },
+    },
+    questions: {
+      type: [
+        {
+          examinerScript: { type: String, required: true },
+          expectedKeywords: { type: [String], default: [] },
+          targetGrammar: { type: [String], default: [] },
+          topic: { type: String },
+          level: {
+            type: String,
+            enum: ["Starters", "Movers", "Flyers"],
+          },
+          difficulty: {
+            type: String,
+            enum: ["Easy", "Medium", "Hard"],
+          },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true }
