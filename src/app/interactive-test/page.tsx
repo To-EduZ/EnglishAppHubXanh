@@ -409,7 +409,16 @@ export default function InteractiveTest() {
           };
 
           recognition.onerror = (e: any) => {
-            console.error("Speech Recognition Error:", e);
+            if (e.error === "aborted") {
+              // Bỏ qua lỗi ngắt kết nối thủ công vì đây là hành vi bình thường khi tắt mic
+              console.log("🎙️ Speech recognition stopped/aborted manually.");
+              return;
+            }
+            console.error("Speech Recognition Error Type:", e.error);
+            console.error("Speech Recognition Error Details:", e.message || "No message", e);
+            if (e.error === "not-allowed") {
+              console.warn("⚠️ Microphone access denied or origin is not secure (requires localhost or HTTPS).");
+            }
           };
 
           recognition.onend = () => {
