@@ -1174,31 +1174,32 @@ export default function InteractiveTest() {
       <audio ref={audioRef} className="hidden" />
 
       {/* Header with Stage indicators */}
-      <div className="bg-white dark:bg-slate-900 p-3 md:p-4 shadow-md flex items-center justify-between sticky top-0 z-20 border-b dark:border-slate-700 rounded-b-3xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-955/50 flex items-center justify-center text-xl shadow-inner border-2 border-blue-200">👩‍🏫</div>
-          <div>
-            <h2 className="text-sm md:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <span>Cô Lily AI</span>
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-[9px] px-1.5 py-0.5 rounded-md font-mono font-black uppercase tracking-wider">PRO</span>
+      <div className="bg-white dark:bg-slate-900 p-2 sm:p-3 md:p-4 shadow-md flex items-center justify-between sticky top-0 z-20 border-b dark:border-slate-700 rounded-b-3xl select-none gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 dark:bg-blue-955/50 flex items-center justify-center text-lg sm:text-xl shadow-inner border-2 border-blue-200">👩‍🏫</div>
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-sm md:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-1">
+              <span className="truncate">Cô Lily</span>
+              <span className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-[8px] px-1 py-0.2 rounded font-mono font-black uppercase">PRO</span>
             </h2>
-            <p className="text-[10px] text-blue-500 font-extrabold capitalize">
-              Giai đoạn {stage === "warmup" ? "1: Khởi động" : stage === "picture" ? "2: Xem tranh tả từ" : stage === "reading" ? "3: Tập đọc & Trắc nghiệm" : "4: Đánh vần chữ"}
+            <p className="text-[9px] sm:text-[10px] text-blue-500 font-extrabold capitalize truncate">
+              <span className="hidden sm:inline">Giai đoạn </span>
+              {stage === "warmup" ? "1: Khởi động" : stage === "picture" ? "2: Tả tranh" : stage === "reading" ? "3: Tập đọc" : "4: Đánh vần"}
             </p>
           </div>
         </div>
 
         {/* Cambridge Progress Bar */}
-        <div className="flex flex-col items-center gap-1 max-w-[150px] md:max-w-xs w-full">
-          <div className="flex justify-between w-full text-[9px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex flex-col items-center gap-0.5 sm:gap-1 max-w-[80px] sm:max-w-[150px] md:max-w-xs w-full">
+          <div className="hidden sm:flex justify-between w-full text-[9px] font-black text-slate-400 uppercase tracking-widest">
             <span>Tiến trình</span>
             <span>
               {stage === "warmup" ? "25%" : stage === "picture" ? "50%" : stage === "reading" ? "75%" : "95%"}
             </span>
           </div>
-          <div className="flex items-center gap-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 md:h-3 border border-slate-200 dark:border-slate-650 px-0.5 overflow-hidden">
+          <div className="flex items-center gap-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 sm:h-2.5 md:h-3 border border-slate-200 dark:border-slate-650 px-0.5 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-emerald-400 to-blue-500 h-1.5 md:h-2 rounded-full transition-all duration-500 shadow-sm animate-pulse-slow"
+              className="bg-gradient-to-r from-emerald-400 to-blue-500 h-1 sm:h-1.5 md:h-2 rounded-full transition-all duration-500 shadow-sm animate-pulse-slow"
               style={{ 
                 width: 
                   stage === "warmup" ? "25%" : 
@@ -1209,13 +1210,13 @@ export default function InteractiveTest() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
           {/* AI Accent Selector */}
           <div className="relative">
             <select
               value={selectedVoice}
               onChange={(e) => handleVoiceChange(e.target.value)}
-              className="appearance-none bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black rounded-2xl pl-8 pr-7 py-2 transition-all shadow-sm focus:outline-none cursor-pointer"
+              className="appearance-none bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs font-black rounded-2xl pl-6 sm:pl-8 pr-5 sm:pr-7 py-1.5 sm:py-2 transition-all shadow-sm focus:outline-none cursor-pointer"
             >
               {voices.map((v) => (
                 <option key={v.code} value={v.code} className="dark:bg-slate-900 dark:text-slate-200 font-bold">
@@ -1223,13 +1224,14 @@ export default function InteractiveTest() {
                 </option>
               ))}
             </select>
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs pointer-events-none">🌐</span>
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] pointer-events-none opacity-60">▼</span>
+            <span className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs pointer-events-none">🌐</span>
+            <span className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 text-[6px] sm:text-[7px] pointer-events-none opacity-60">▼</span>
           </div>
 
           <Link href="/">
-            <button className="btn-3d-pink px-4 py-2.5 text-xs font-black flex items-center gap-1 cursor-pointer">
-              Thoát 🚪
+            <button className="btn-3d-pink px-2.5 sm:px-4 py-1.5 sm:py-2.5 text-[10px] sm:text-xs font-black flex items-center gap-1 cursor-pointer">
+              <span>Thoát</span>
+              <span className="hidden sm:inline">🚪</span>
             </button>
           </Link>
         </div>
