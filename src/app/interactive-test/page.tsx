@@ -61,57 +61,65 @@ const TeacherAvatar = ({ state }: { state: "idle" | "speaking" | "listening" | "
     ringColor = "border-emerald-400 dark:border-emerald-600";
     pulseClass = "animate-pulse ring-4 ring-emerald-100 dark:ring-emerald-950/20";
     badgeText = "Cô Lily đang nói... 🔊";
-    badgeTheme = "bg-emerald-50 text-emerald-600 border-emerald-250 dark:bg-emerald-950/40 dark:text-emerald-350 dark:border-emerald-900";
+    badgeTheme = "bg-emerald-50 text-emerald-600 border-emerald-250 dark:bg-emerald-955/40 dark:text-emerald-350 dark:border-emerald-900";
   } else if (state === "listening") {
     ringColor = "border-rose-400 dark:border-rose-600";
     pulseClass = "animate-pulse ring-4 ring-rose-100 dark:ring-rose-950/20";
-    badgeText = "Bé trả lời đi, cô nghe nè... 🎤";
-    badgeTheme = "bg-rose-50 text-rose-600 border-rose-255 dark:bg-rose-950/40 dark:text-rose-350 dark:border-rose-900";
+    badgeText = "Cô đang nghe con nè... 🎤";
+    badgeTheme = "bg-rose-50 text-rose-600 border-rose-255 dark:bg-rose-955/40 dark:text-rose-350 dark:border-rose-900";
   } else if (state === "thinking") {
     ringColor = "border-amber-400 dark:border-amber-600";
     pulseClass = "animate-pulse ring-4 ring-amber-100 dark:ring-amber-950/20";
-    badgeText = "Cô Lily đang suy nghĩ... 🧠";
-    badgeTheme = "bg-amber-50 text-amber-600 border-amber-250 dark:bg-amber-950/40 dark:text-amber-350 dark:border-amber-900";
+    badgeText = "Cô đang suy nghĩ... 🧠";
+    badgeTheme = "bg-amber-50 text-amber-600 border-amber-250 dark:bg-amber-955/40 dark:text-amber-350 dark:border-amber-900";
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 select-none">
-      <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-4 ${ringColor} ${pulseClass} transition-all duration-300 flex items-center justify-center bg-sky-50 dark:bg-slate-800 shadow-sm`}>
+    <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 w-full select-none">
+      <div className={`relative w-12 h-12 rounded-full border-2 ${ringColor} ${pulseClass} transition-all duration-300 flex items-center justify-center bg-sky-50 dark:bg-slate-800 shadow-sm shrink-0`}>
         {/* Cute female teacher avatar SVG */}
-        <svg className="w-10 h-10 md:w-14 md:h-14 text-indigo-500 fill-indigo-100 dark:text-indigo-400 dark:fill-indigo-950/30" viewBox="0 0 24 24">
+        <svg className="w-8 h-8 text-indigo-500 fill-indigo-100 dark:text-indigo-400 dark:fill-indigo-950/30" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
           <circle cx="10.5" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
           <circle cx="13.5" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
           <line x1="12" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1" />
         </svg>
         {state === "speaking" && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 text-[10px] items-center justify-center">🔊</span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 text-[8px] items-center justify-center">🔊</span>
           </span>
         )}
         {state === "listening" && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[10px] items-center justify-center">🎤</span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 text-[8px] items-center justify-center">🎤</span>
           </span>
         )}
         {state === "thinking" && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center">🧠</span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 text-[8px] items-center justify-center">🧠</span>
           </span>
         )}
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-black tracking-wide border shadow-sm ${badgeTheme}`}>
-        {badgeText}
-      </span>
+      
+      <div className="flex-1 min-w-0 text-left">
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-black text-slate-800 dark:text-slate-100">Cô Lily AI</span>
+          <span className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-[8px] px-1 py-0.2 rounded font-mono font-black uppercase">PRO</span>
+        </div>
+        <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black border shadow-sm ${badgeTheme}`}>
+          {badgeText}
+        </span>
+      </div>
     </div>
   );
 };
 
 export default function InteractiveTest() {
   const [stage, setStage] = useState<Stage>("intro");
+  const [activeTab, setActiveTab] = useState<"progress" | "chat">("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -256,6 +264,15 @@ export default function InteractiveTest() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing, stage]);
+
+  // Auto-switch tabs based on stage/activity change
+  useEffect(() => {
+    if (stage === "warmup") {
+      setActiveTab("chat");
+    } else if (stage === "picture" || stage === "reading" || stage === "writing") {
+      setActiveTab("progress");
+    }
+  }, [stage, showMcq, pictureIndex]);
 
   const playTTS = (text: string) => {
     const cleanText = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
@@ -1152,14 +1169,14 @@ export default function InteractiveTest() {
 
   // 3. Main Testing stages interface
   return (
-    <div className="bg-slate-50 dark:bg-dark-bg flex flex-col h-screen overflow-hidden max-w-6xl mx-auto relative select-none">
+    <div className="bg-slate-50 dark:bg-dark-bg flex flex-col h-screen overflow-hidden w-full max-w-[95%] lg:max-w-[1400px] mx-auto relative select-none">
       {/* Hidden audio element for TTS */}
       <audio ref={audioRef} className="hidden" />
 
       {/* Header with Stage indicators */}
       <div className="bg-white dark:bg-slate-900 p-3 md:p-4 shadow-md flex items-center justify-between sticky top-0 z-20 border-b dark:border-slate-700 rounded-b-3xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center text-xl shadow-inner border-2 border-blue-200">👩‍🏫</div>
+          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-955/50 flex items-center justify-center text-xl shadow-inner border-2 border-blue-200">👩‍🏫</div>
           <div>
             <h2 className="text-sm md:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
               <span>Cô Lily AI</span>
@@ -1218,357 +1235,444 @@ export default function InteractiveTest() {
         </div>
       </div>
 
-      {/* Main Unified Dashboard Workspace */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 p-4 min-h-0 overflow-hidden">
+      {/* Dynamic Tab Switcher for kids - Hidden on Desktop */}
+      <div className="px-4 pt-3 pb-1 flex gap-2 select-none shrink-0 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setActiveTab("progress")}
+          className={`flex-1 py-3 px-4 rounded-2xl font-black text-sm md:text-base flex items-center justify-center gap-2 border-b-4 transition-all duration-100 ${
+            activeTab === "progress"
+              ? "bg-amber-400 text-amber-950 border-amber-600 shadow-md scale-[1.02]"
+              : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 border-b-2 hover:bg-slate-50 dark:hover:bg-slate-750"
+          }`}
+        >
+          <span className="text-lg">🖼️</span>
+          <span>Tranh & Bài học</span>
+        </button>
         
-        {/* Left Column: Visual & Text Learning Material */}
-        <div className="col-span-12 md:col-span-7 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-850 shadow-md p-4 md:p-5 overflow-y-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab("chat")}
+          className={`flex-1 py-3 px-4 rounded-2xl font-black text-sm md:text-base flex items-center justify-center gap-2 border-b-4 transition-all duration-100 relative ${
+            activeTab === "chat"
+              ? "bg-blue-400 text-blue-950 border-blue-600 shadow-md scale-[1.02]"
+              : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 border-b-2 hover:bg-slate-50 dark:hover:bg-slate-750"
+          }`}
+        >
+          <span className="text-lg">💬</span>
+          <span>Trò chuyện cùng cô</span>
+          {messages.length > 0 && activeTab !== "chat" && (
+            <span className="absolute -top-1.5 -right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-455 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[9px] text-white font-bold items-center justify-center">!</span>
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Main Workspace Area (Tab Content) */}
+      <div className="flex-1 p-4 min-h-0 overflow-hidden relative">
+        <div className="h-full w-full bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-150 dark:border-slate-800 shadow-md p-4 md:p-6 overflow-hidden">
           
-          {stage === "warmup" && (
-            <div className="flex-1 flex flex-col justify-center items-center text-center p-4">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full blur-xl opacity-30 animate-pulse" />
-                <span className="text-7xl block relative animate-bounce" style={{ animationDuration: "3s" }}>🏫</span>
-              </div>
-              <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">Giai đoạn 1: Chào hỏi với cô giáo AI</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-455 max-w-md leading-relaxed font-bold">
-                Con hãy lắng nghe câu hỏi của cô giáo Lily ở góc bên phải, nhấn nút micro và nói thật rõ ràng nhé! 🎤🌟
-              </p>
-              
-              {/* Cute illustration layout */}
-              <div className="mt-8 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 bg-slate-50 dark:bg-slate-805/50 w-full max-w-sm">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <span className="text-2xl block mb-1">👤</span>
-                    <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Tên: {kidName}</span>
-                  </div>
-                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <span className="text-2xl block mb-1">🎂</span>
-                    <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Tuổi: {kidAge}</span>
-                  </div>
-                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <span className="text-2xl block mb-1">🦁</span>
-                    <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Thú cưng: {favAnimal || "???"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {stage === "picture" && currentQuestion && (
-            <div className="flex-1 flex flex-col min-h-0 justify-between">
-              <div>
-                <h3 className="font-extrabold text-amber-700 dark:text-amber-300 flex items-center justify-between mb-3 text-xs uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🖼️</span>
-                    <span>Bức tranh {pictureIndex + 1}/2 — Thử thách {subQuestionIndex + 1}/5</span>
-                  </div>
-                  
-                  {/* Cambridge shield trackers */}
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <YleShield key={i} filled={i <= subQuestionIndex} />
-                    ))}
-                  </div>
-                </h3>
-              </div>
-
-              {currentQuestion.imagePath && (
-                <div className="relative w-full aspect-video md:max-h-[300px] flex-1 min-h-[160px] rounded-2xl overflow-hidden shadow-lg border-4 border-white dark:border-slate-855 hover:scale-[1.01] transition-transform duration-300">
-                  <Image 
-                    src={currentQuestion.imagePath} 
-                    alt="Study illustration" 
-                    fill 
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 600px"
-                    priority
-                  />
-                </div>
-              )}
-
-              {/* Reward list for kids */}
-              <div className="mt-4 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl">
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Từ vựng con đã bật âm đúng: </p>
-                <div className="flex flex-wrap gap-2">
-                  {keywordsMentioned.length === 0 ? (
-                    <span className="text-xs font-bold text-slate-450 dark:text-slate-500 italic">Con hãy nói các từ khóa trong tranh để nhận sticker nhé! ✨</span>
-                  ) : (
-                    keywordsMentioned.map((word) => (
-                      <span key={word} className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-350 border-2 border-emerald-200 dark:border-emerald-900 text-xs font-black px-3.5 py-1 rounded-full flex items-center gap-1.5 animate-bounce-subtle">
-                        <span>⭐</span> {word}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {stage === "reading" && (
-            <div className="flex-1 flex flex-col justify-center min-h-0">
-              {!showMcq ? (
-                // Reading Aloud slide
-                <div className="flex flex-col items-center p-2 min-h-0">
-                  <h3 className="font-extrabold text-emerald-800 dark:text-emerald-355 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <span className="text-lg">📖</span>
-                    Đọc to câu chuyện dưới đây cho cô giáo Lily nghe nhé:
-                  </h3>
-                  
-                  <div className="relative bg-amber-50 dark:bg-slate-855 border-4 border-amber-200 dark:border-slate-700 rounded-3xl p-6 md:p-8 shadow-inner w-full max-w-xl">
-                    <span className="absolute -top-4 -left-4 text-3xl">✨</span>
-                    <span className="absolute -bottom-4 -right-4 text-3xl">🎈</span>
-                    <p className="text-base md:text-xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed font-sans text-center select-none whitespace-normal">
-                      "{activeStory}"
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                // Reading MCQ slide
-                <div className="flex flex-col items-center p-2 min-h-0">
-                  <h3 className="font-extrabold text-blue-800 dark:text-blue-300 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <span className="text-lg">🧩</span>
-                    Đã đến giờ trả lời câu hỏi! Chọn 1 đáp án đúng:
-                  </h3>
-                  
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850 border-2 border-blue-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm mb-5 text-center w-full max-w-lg">
-                    <p className="text-base md:text-xl font-black text-slate-800 dark:text-slate-100">
-                      {activeMcq.question}
-                    </p>
-                  </div>
-
-                  {/* Interactive MCQ Choices */}
-                  <div className="flex flex-col gap-3 w-full max-w-md">
-                    {activeMcq.options.map((option: string, idx: number) => {
-                      const isSelected = selectedMcqOption === idx;
-                      const isCorrectOption = idx === activeMcq.correctIndex;
-                      
-                      let optionClass = "bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-400 dark:hover:border-blue-500 hover:translate-y-[-2px]";
-                      if (mcqAnswered) {
-                        if (isCorrectOption) {
-                          optionClass = "bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 scale-105 shadow-md shadow-emerald-100 dark:shadow-emerald-950/20";
-                        } else if (isSelected) {
-                          optionClass = "bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-400 dark:border-rose-500 text-rose-700 dark:text-rose-350 scale-95 opacity-80";
-                        } else {
-                          optionClass = "bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-60";
-                        }
-                      }
-
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleMcqSelect(idx)}
-                          disabled={mcqAnswered}
-                          className={`w-full p-4 rounded-2xl font-black text-sm md:text-base transition-all duration-200 cursor-pointer shadow-sm flex items-center justify-between ${optionClass}`}
-                        >
-                          <span>{option}</span>
-                          {mcqAnswered && isCorrectOption && (
-                            <span className="text-xl shrink-0 ml-2 animate-bounce">✅</span>
-                          )}
-                          {mcqAnswered && isSelected && !isCorrectOption && (
-                            <span className="text-xl shrink-0 ml-2">❌</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {stage === "writing" && (
-            <div className="flex-1 flex flex-col justify-center items-center min-h-0">
-              <h3 className="font-extrabold text-indigo-800 dark:text-indigo-300 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                <span className="text-lg">✍️</span>
-                Thử thách đánh vần chữ [{writingTaskIndex + 1}/2]
-              </h3>
-
-              <div className="bg-white dark:bg-slate-855 border-4 border-indigo-200 dark:border-slate-700 rounded-3xl p-6 shadow-md w-full max-w-md flex flex-col items-center text-center">
-                <div className="relative w-24 h-24 rounded-full bg-indigo-50 dark:bg-slate-800 border-2 border-indigo-200 flex items-center justify-center text-5xl mb-4 shadow-inner">
-                  <span className="absolute inset-0 rounded-full border-4 border-dashed border-indigo-300/40 animate-spin" style={{ animationDuration: "12s" }} />
-                  <span className="animate-bounce" style={{ animationDuration: "2.5s" }}>
-                    {writingTaskIndex === 0 ? "🐒" : "🍌"}
-                  </span>
-                </div>
-                
-                <p className="text-slate-700 dark:text-slate-200 font-extrabold text-sm md:text-base leading-relaxed mb-6 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 rounded-2xl border border-slate-100 dark:border-slate-750 w-full">
-                  Cô Lily hỏi: "{activeSpelling[writingTaskIndex].prompt}"
-                </p>
-
-                <form onSubmit={handleWritingSubmit} className="w-full">
-                  <input 
-                    type="text" 
-                    value={typedWord}
-                    onChange={(e) => setTypedWord(e.target.value)}
-                    disabled={writingSubmitted}
-                    placeholder="Gõ câu trả lời của con tại đây..."
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-750 rounded-2xl font-black text-center text-2xl text-indigo-650 dark:text-indigo-300 placeholder-slate-400 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-855 transition-all shadow-inner uppercase tracking-widest"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoFocus
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={!typedWord.trim() || writingSubmitted}
-                    className="w-full mt-4 btn-3d-blue py-3.5 font-extrabold text-base flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                  >
-                    Nộp bài viết 🚀
-                  </button>
-                </form>
-
-                {writingSubmitted && (
-                  <div className="mt-4 animate-bounce-subtle text-xs font-black">
-                    {typedWord.toLowerCase().trim() === activeSpelling[writingTaskIndex].correctWord.toLowerCase().trim() ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-full border border-emerald-250">🎉 Xuất sắc! Con đã viết chính xác rồi!</span>
-                    ) : (
-                      <span className="text-rose-500 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/20 px-3 py-1.5 rounded-full border border-rose-250">✍️ Con viết gần đúng rồi, cô đang chấm điểm nhé!</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Right Column: AI interaction center & Controls */}
-        <div className="col-span-12 md:col-span-5 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-3xl border-4 border-slate-100 dark:border-slate-800 shadow-md p-4 md:p-5 overflow-hidden justify-between">
-          
-          {/* AI Teacher Profile & Avatar */}
-          <div className="border-b dark:border-slate-800 pb-3">
-            <TeacherAvatar state={getTeacherState()} />
-          </div>
-
-          {/* Dialogue exchange box (auto scroll) */}
-          <div className="flex-1 overflow-y-auto my-3 p-3 bg-slate-50 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-3 min-h-[160px] md:min-h-0">
-            {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-center p-4">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 italic">Bấm Bắt đầu thi để nói chuyện cùng cô Lily nhé! 🌟</span>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === "ai" ? "justify-start" : "justify-end"}`}>
-                  <div className={`relative max-w-[85%] p-3.5 rounded-2xl text-xs md:text-sm font-bold shadow-sm ${
-                    msg.role === "ai" 
-                      ? "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-none" 
-                      : "bg-blue-500 text-white rounded-tr-none"
-                  }`}>
-                    {msg.role === "ai" && (
-                      <div className="absolute left-[-6px] top-0 w-0 h-0 border-t-[8px] border-t-white dark:border-t-slate-800 border-l-[6px] border-l-transparent" />
-                    )}
-                    {msg.role === "user" && (
-                      <div className="absolute right-[-6px] top-0 w-0 h-0 border-t-[8px] border-t-blue-500 border-r-[6px] border-r-transparent" />
-                    )}
-                    <p className="leading-relaxed">{msg.content}</p>
-                  </div>
-                </div>
-              ))
-            )}
+          {/* Grid structure: side-by-side on desktop, tabs on mobile */}
+          <div className="h-full w-full grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden">
             
-            {isProcessing && (
-              <div className="flex justify-start">
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-450">
-                  <div className="flex gap-0.5">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0s" }} />
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
-                  </div>
-                  <span>Cô Lily đang suy nghĩ...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            {/* Left Column: Tranh & Bài học */}
+            <div className={`lg:col-span-7 flex flex-col min-h-0 overflow-y-auto ${activeTab === "progress" ? "flex" : "hidden lg:flex"}`}>
+             {stage === "warmup" && (
+               <div className="flex-1 flex flex-col justify-center items-center text-center p-4">
+                 <div className="relative mb-6">
+                   <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full blur-xl opacity-30 animate-pulse" />
+                   <span className="text-7xl block relative animate-bounce" style={{ animationDuration: "3s" }}>🏫</span>
+                 </div>
+                 <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">Giai đoạn 1: Chào hỏi với cô giáo AI</h3>
+                 <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 max-w-md leading-relaxed font-black">
+                   Con hãy lắng nghe câu hỏi của cô giáo Lily, nhấn nút micro ở dưới cùng và nói thật rõ ràng nhé! 🎤🌟
+                 </p>
+                 
+                 {/* Cute illustration layout */}
+                 <div className="mt-8 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-6 bg-slate-50 dark:bg-slate-800 w-full max-w-sm">
+                   <div className="grid grid-cols-3 gap-3 text-center">
+                     <div className="p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                       <span className="text-2xl block mb-1">👤</span>
+                       <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Tên: {kidName}</span>
+                     </div>
+                     <div className="p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                       <span className="text-2xl block mb-1">🎂</span>
+                       <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Tuổi: {kidAge}</span>
+                     </div>
+                     <div className="p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                       <span className="text-2xl block mb-1">🦁</span>
+                       <span className="text-[10px] font-black text-slate-550 dark:text-slate-400 uppercase">Thú cưng: {favAnimal || "???"}</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             )}
 
-          {/* Soundwave visualizer & interim STT (only when recording) */}
-          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-2.5 rounded-2xl mb-3 h-14 flex items-center justify-between overflow-hidden">
+             {stage === "picture" && currentQuestion && (
+               <div className="flex-1 flex flex-col min-h-0 justify-between">
+                 <div>
+                   <h3 className="font-extrabold text-amber-700 dark:text-amber-300 flex items-center justify-between mb-3 text-xs uppercase tracking-wider">
+                     <div className="flex items-center gap-2">
+                       <span className="text-lg">🖼️</span>
+                       <span>Bức tranh {pictureIndex + 1}/2 — Thử thách {subQuestionIndex + 1}/5</span>
+                     </div>
+                     
+                     {/* Cambridge shield trackers */}
+                     <div className="flex gap-0.5">
+                       {Array.from({ length: 5 }).map((_, i) => (
+                         <YleShield key={i} filled={i <= subQuestionIndex} />
+                       ))}
+                     </div>
+                   </h3>
+                 </div>
+
+                 {currentQuestion.imagePath && (
+                   <div className="relative w-full max-w-xl mx-auto aspect-video md:max-h-[300px] flex-1 min-h-[180px] rounded-3xl overflow-hidden shadow-lg border-4 border-white dark:border-slate-855 hover:scale-[1.01] transition-transform duration-300 my-2">
+                     <Image 
+                       src={currentQuestion.imagePath} 
+                       alt="Study illustration" 
+                       fill 
+                       className="object-cover"
+                       sizes="(max-width: 768px) 100vw, 600px"
+                       priority
+                     />
+                   </div>
+                 )}
+
+                 {/* Reward list for kids */}
+                 <div className="mt-4 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl">
+                   <p className="text-[10px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider mb-2">Từ vựng con đã bật âm đúng: </p>
+                   <div className="flex flex-wrap gap-2">
+                     {keywordsMentioned.length === 0 ? (
+                       <span className="text-xs font-bold text-slate-400 dark:text-slate-555 italic">Con hãy nói các từ khóa trong tranh để nhận sticker nhé! ✨</span>
+                     ) : (
+                       keywordsMentioned.map((word) => (
+                         <span key={word} className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-350 border-2 border-emerald-200 dark:border-emerald-900 text-xs font-black px-3.5 py-1 rounded-full flex items-center gap-1.5 animate-bounce-subtle">
+                           <span>⭐</span> {word}
+                         </span>
+                       ))
+                     )}
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {stage === "reading" && (
+               <div className="flex-1 flex flex-col justify-center min-h-0">
+                 {!showMcq ? (
+                   // Reading Aloud slide
+                   <div className="flex flex-col items-center p-2 min-h-0">
+                     <h3 className="font-extrabold text-emerald-805 dark:text-emerald-355 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                       <span className="text-lg">📖</span>
+                       Đọc to câu chuyện dưới đây cho cô giáo Lily nghe nhé:
+                     </h3>
+                     
+                     <div className="relative bg-amber-50 dark:bg-slate-855 border-4 border-amber-200 dark:border-slate-700 rounded-3xl p-6 md:p-8 shadow-inner w-full max-w-xl">
+                       <span className="absolute -top-4 -left-4 text-3xl">✨</span>
+                       <span className="absolute -bottom-4 -right-4 text-3xl">🎈</span>
+                       <p className="text-base md:text-xl font-bold text-slate-850 dark:text-slate-100 leading-relaxed font-sans text-center select-none whitespace-normal">
+                         "{activeStory}"
+                       </p>
+                     </div>
+                   </div>
+                 ) : (
+                   // Reading MCQ slide
+                   <div className="flex flex-col items-center p-2 min-h-0">
+                     <h3 className="font-extrabold text-blue-805 dark:text-blue-300 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                       <span className="text-lg">🧩</span>
+                       Đã đến giờ trả lời câu hỏi! Chọn 1 đáp án đúng:
+                     </h3>
+                     
+                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850 border-2 border-blue-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm mb-5 text-center w-full max-w-lg">
+                       <p className="text-base md:text-xl font-black text-slate-800 dark:text-slate-100">
+                         {activeMcq.question}
+                       </p>
+                     </div>
+
+                     {/* Interactive MCQ Choices */}
+                     <div className="flex flex-col gap-3 w-full max-w-md">
+                       {activeMcq.options.map((option: string, idx: number) => {
+                         const isSelected = selectedMcqOption === idx;
+                         const isCorrectOption = idx === activeMcq.correctIndex;
+                         
+                         let optionClass = "bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-400 dark:hover:border-blue-500 hover:translate-y-[-2px]";
+                         if (mcqAnswered) {
+                           if (isCorrectOption) {
+                             optionClass = "bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 scale-105 shadow-md shadow-emerald-100 dark:shadow-emerald-950/20";
+                           } else if (isSelected) {
+                             optionClass = "bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-400 dark:border-rose-500 text-rose-700 dark:text-rose-355 scale-95 opacity-80";
+                           } else {
+                             optionClass = "bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-60";
+                           }
+                         }
+
+                         return (
+                           <button
+                             key={idx}
+                             type="button"
+                             onClick={() => handleMcqSelect(idx)}
+                             disabled={mcqAnswered}
+                             className={`w-full p-4 rounded-2xl font-black text-sm md:text-base transition-all duration-200 cursor-pointer shadow-sm flex items-center justify-between ${optionClass}`}
+                           >
+                             <span>{option}</span>
+                             {mcqAnswered && isCorrectOption && (
+                               <span className="text-xl shrink-0 ml-2 animate-bounce">✅</span>
+                             )}
+                             {mcqAnswered && isSelected && !isCorrectOption && (
+                               <span className="text-xl shrink-0 ml-2">❌</span>
+                             )}
+                           </button>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             )}
+
+             {stage === "writing" && (
+               <div className="flex-1 flex flex-col justify-center items-center min-h-0">
+                 <h3 className="font-extrabold text-indigo-805 dark:text-indigo-300 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                   <span className="text-lg">✍️</span>
+                   Thử thách đánh vần chữ [{writingTaskIndex + 1}/2]
+                 </h3>
+
+                 <div className="bg-white dark:bg-slate-855 border-4 border-indigo-200 dark:border-slate-700 rounded-3xl p-6 shadow-md w-full max-w-md flex flex-col items-center text-center">
+                   <div className="relative w-24 h-24 rounded-full bg-indigo-50 dark:bg-slate-800 border-2 border-indigo-200 flex items-center justify-center text-5xl mb-4 shadow-inner">
+                     <span className="absolute inset-0 rounded-full border-4 border-dashed border-indigo-300/40 animate-spin" style={{ animationDuration: "12s" }} />
+                     <span className="animate-bounce" style={{ animationDuration: "2.5s" }}>
+                       {writingTaskIndex === 0 ? "🐒" : "🍌"}
+                     </span>
+                   </div>
+                   
+                   <p className="text-slate-750 dark:text-slate-200 font-extrabold text-sm md:text-base leading-relaxed mb-6 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 rounded-2xl border border-slate-100 dark:border-slate-750 w-full text-center">
+                     Cô Lily hỏi: "{activeSpelling[writingTaskIndex].prompt}"
+                   </p>
+
+                   <form onSubmit={handleWritingSubmit} className="w-full">
+                     <input 
+                       type="text" 
+                       value={typedWord}
+                       onChange={(e) => setTypedWord(e.target.value)}
+                       disabled={writingSubmitted}
+                       placeholder="Gõ từ tại đây..."
+                       className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-750 rounded-2xl font-black text-center text-2xl text-indigo-650 dark:text-indigo-300 placeholder-slate-400 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-855 transition-all shadow-inner uppercase tracking-widest"
+                       autoComplete="off"
+                       autoCorrect="off"
+                       autoFocus
+                     />
+
+                     <button
+                       type="submit"
+                       disabled={!typedWord.trim() || writingSubmitted}
+                       className="w-full mt-4 btn-3d-blue py-3.5 font-extrabold text-base flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                     >
+                       Nộp bài viết 🚀
+                     </button>
+                   </form>
+
+                   {writingSubmitted && (
+                     <div className="mt-4 animate-bounce-subtle text-xs font-black">
+                       {typedWord.toLowerCase().trim() === activeSpelling[writingTaskIndex].correctWord.toLowerCase().trim() ? (
+                         <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-full border border-emerald-250">🎉 Xuất sắc! Con đã viết chính xác rồi!</span>
+                       ) : (
+                         <span className="text-rose-500 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/20 px-3 py-1.5 rounded-full border border-rose-250">✍️ Con viết gần đúng rồi, cô đang chấm điểm nhé!</span>
+                       )}
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
+            </div>
+
+            {/* Right Column: Trò chuyện cùng cô */}
+            <div className={`lg:col-span-5 flex flex-col min-h-0 lg:border-l-4 border-slate-100 dark:border-slate-800 lg:pl-6 ${activeTab === "chat" ? "flex" : "hidden lg:flex"}`}>
+             
+             {/* Compact material preview helper inside Chat tab */}
+             {stage !== "warmup" && (
+               <div className="bg-amber-50/80 dark:bg-slate-850/80 border border-amber-200 dark:border-slate-800 p-2.5 rounded-2xl mb-3 flex items-center justify-between gap-3 shrink-0 select-none shadow-sm">
+                 <div className="flex items-center gap-2 min-w-0">
+                   <span className="text-xl shrink-0">
+                     {stage === "picture" ? "🖼️" : stage === "reading" ? "📖" : "✍️"}
+                   </span>
+                   <div className="text-left min-w-0">
+                     <p className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Nhiệm vụ của con:</p>
+                     <p className="text-xs font-black text-slate-705 dark:text-slate-200 truncate">
+                       {stage === "picture" 
+                         ? `Xem Bức tranh tả từ số ${pictureIndex + 1}` 
+                         : stage === "reading" 
+                         ? (showMcq ? "Trả lời câu hỏi trắc nghiệm đọc hiểu" : "Đọc to câu chuyện truyện dài") 
+                         : `Đánh vần từ: "${activeSpelling[writingTaskIndex].correctWord.substring(0, 1)}..."`}
+                     </p>
+                   </div>
+                 </div>
+                 <button
+                   type="button"
+                   onClick={() => setActiveTab("progress")}
+                   className="px-3.5 py-1.5 bg-amber-405 hover:bg-amber-500 text-amber-950 font-black text-[10px] uppercase rounded-xl border-b-3 border-amber-600 transition-all shrink-0 cursor-pointer"
+                 >
+                   Xem Tranh/Bài học 🔍
+                 </button>
+               </div>
+             )}
+
+              {/* Dialogue exchange box (auto scroll) */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-slate-405 dark:text-slate-600 gap-3 py-10">
+                    <span className="text-4xl animate-pulse">👋</span>
+                    <p className="text-xs font-black">Hãy nói gì đó để bắt đầu trò chuyện cùng cô Lily nhé!</p>
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <div key={idx} className={`flex items-start gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      {msg.role === "ai" && (
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-955 flex items-center justify-center border border-blue-200 shrink-0 text-sm select-none shadow-sm">
+                          👩‍🏫
+                        </div>
+                      )}
+                      <div className={`relative max-w-[80%] px-4 py-3 rounded-2xl text-xs md:text-sm font-black shadow-sm ${
+                        msg.role === "ai" 
+                          ? "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-750 text-slate-800 dark:text-slate-100 rounded-tl-none" 
+                          : "bg-blue-500 text-white rounded-tr-none"
+                      }`}>
+                       {msg.role === "ai" && (
+                         <div className="absolute left-[-6px] top-3 w-0 h-0 border-t-[8px] border-t-white dark:border-t-slate-800 border-l-[6px] border-l-transparent" />
+                       )}
+                       {msg.role === "user" && (
+                         <div className="absolute right-[-6px] top-3 w-0 h-0 border-t-[8px] border-t-blue-500 border-r-[6px] border-r-transparent" />
+                       )}
+                       <p className="whitespace-pre-line">{msg.content}</p>
+                     </div>
+                     {msg.role === "user" && (
+                       <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center border border-emerald-200 shrink-0 text-sm select-none shadow-sm">
+                         👶
+                       </div>
+                     )}
+                   </div>
+                 ))
+               )}
+               
+               {isProcessing && (
+                 <div className="flex justify-start items-start gap-2.5">
+                   <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-955 flex items-center justify-center border border-blue-200 shrink-0 text-sm select-none shadow-sm">
+                     👩‍🏫
+                   </div>
+                   <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-4 rounded-3xl rounded-tl-none shadow-sm flex items-center gap-2 text-sm font-black text-slate-555 dark:text-slate-400">
+                     <div className="flex gap-0.5">
+                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0s" }} />
+                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
+                     </div>
+                     <span>Cô Lily đang suy nghĩ...</span>
+                   </div>
+                 </div>
+               )}
+               <div ref={messagesEndRef} />
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Shared Bottom Control Panel */}
+      <div className="bg-white dark:bg-slate-900 border-t-4 border-slate-150 dark:border-slate-800 p-3 md:p-4 rounded-t-3xl shadow-lg shrink-0 select-none">
+        <div className="max-w-6xl mx-auto flex flex-col gap-2.5">
+          
+          {/* Real-time transcript / Soundwave display */}
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 px-4 py-2.5 rounded-2xl h-14 flex items-center justify-between overflow-hidden">
             {isRecording ? (
               <div className="flex items-center gap-3 w-full">
                 <Soundwave />
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-[10px] font-black text-rose-500 uppercase tracking-wider mb-0.5 animate-pulse">Con đang nói:</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                  <p className="text-sm font-black text-slate-705 dark:text-slate-300 truncate">
                     {realtimeTranscript || "Hãy nói đi con, cô đang nghe nè... 🎤"}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="w-full flex items-center justify-center">
-                <p className="text-xs font-bold text-slate-450 dark:text-slate-500 italic">
+              <div className="w-full flex items-center justify-center text-center">
+                <p className="text-xs md:text-sm font-black text-slate-550 dark:text-slate-400">
                   {stage === "writing" 
-                    ? "Gõ từ vào ô nhập liệu ở bên trái nhé! ✍️" 
+                    ? "Con hãy gõ câu trả lời vào ô nhập liệu nhé! ✍️" 
                     : showMcq 
-                    ? "Bấm chọn 1 đáp án trắc nghiệm ở bên trái nhé! 🧩" 
+                    ? "Con hãy chọn một đáp án trắc nghiệm ở trên nhé! 🧩" 
                     : "Micro đã tắt. Bấm nút dưới để trả lời cô Lily. 🎤"}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Controls section */}
-          <div className="border-t dark:border-slate-850 pt-3 flex flex-col gap-2">
+          {/* Bottom Row containing controls and main action button */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             
-            {/* Mode selection toggles */}
-            <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-850 p-2 rounded-2xl border border-slate-100 dark:border-slate-805">
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRealtimeMode(true);
-                    stopRecording();
-                  }}
-                  disabled={!isSpeechSupported}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
-                    isRealtimeMode 
-                      ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm" 
-                      : "bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
-                  }`}
-                >
-                  Tự động (Real-time) ⚡
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRealtimeMode(false);
-                    stopRecording();
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
-                    !isRealtimeMode 
-                      ? "bg-slate-700 dark:bg-slate-650 text-white shadow-sm" 
-                      : "bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-355"
-                  }`}
-                >
-                  Nhấn nút 🎤
-                </button>
+            {/* Left side: Voice Mode Switcher & Auto Mic (hidden in writing stage or mcq) */}
+            {stage !== "writing" && !showMcq ? (
+              <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-850 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-805 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRealtimeMode(true);
+                      stopRecording();
+                    }}
+                    disabled={!isSpeechSupported}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
+                      isRealtimeMode 
+                        ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm" 
+                        : "bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+                    }`}
+                  >
+                    Tự động (Real-time) ⚡
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRealtimeMode(false);
+                      stopRecording();
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
+                      !isRealtimeMode 
+                        ? "bg-slate-700 dark:bg-slate-650 text-white shadow-sm" 
+                        : "bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-355"
+                    }`}
+                  >
+                    Nhấn nút 🎤
+                  </button>
+                </div>
+
+                {isRealtimeMode && (
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-1 select-none pr-1">
+                    <input
+                      type="checkbox"
+                      checked={autoActivateMic}
+                      onChange={(e) => setAutoActivateMic(e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <span className="text-[9px] font-black uppercase text-slate-550 dark:text-slate-400">Nghe tự động</span>
+                  </label>
+                )}
               </div>
+            ) : (
+              <div className="hidden sm:block w-1" /> // empty spacer
+            )}
 
-              {/* Autostart mic setting for Realtime mode */}
-              {isRealtimeMode && (
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoActivateMic}
-                    onChange={(e) => setAutoActivateMic(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                  />
-                  <span className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-400">Nghe tự động</span>
-                </label>
-              )}
-            </div>
-
-            {/* Mic trigger buttons */}
-            <div className="flex justify-center my-1.5">
+            {/* Center: Main Mic Trigger Button */}
+            <div className="shrink-0">
               {!isRecording ? (
                 <button 
                   type="button"
                   onClick={startRecording}
                   disabled={isProcessing || showMcq || stage === "writing"}
-                  className="w-16 h-16 bg-gradient-to-tr from-emerald-400 to-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-[0.95] disabled:opacity-20 disabled:hover:scale-100 transition-all shadow-md cursor-pointer border-b-4 border-emerald-700"
+                  className="w-18 h-18 bg-gradient-to-tr from-emerald-400 to-green-500 text-white rounded-full flex flex-col items-center justify-center hover:scale-105 active:scale-[0.95] disabled:opacity-20 disabled:hover:scale-100 transition-all shadow-md cursor-pointer border-b-6 border-emerald-700 shrink-0"
                 >
-                  <Mic className="w-6 h-6 mb-0.5" />
-                  <span className="text-[8px] font-black uppercase tracking-wider">NÓI</span>
+                  <Mic className="w-7 h-7 mb-0.5" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">NÓI</span>
                 </button>
               ) : (
                 <button 
