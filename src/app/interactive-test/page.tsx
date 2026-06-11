@@ -1278,7 +1278,7 @@ export default function InteractiveTest() {
           <div className="h-full w-full grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden">
             
             {/* Left Column: Tranh & Bài học */}
-            <div className={`lg:col-span-7 flex flex-col min-h-0 overflow-y-auto ${activeTab === "progress" ? "flex" : "hidden lg:flex"}`}>
+            <div className={`lg:col-span-6 flex flex-col min-h-0 overflow-y-auto ${activeTab === "progress" ? "flex" : "hidden lg:flex"}`}>
              {stage === "warmup" && (
                <div className="flex-1 flex flex-col justify-center items-center text-center p-4">
                  <div className="relative mb-6">
@@ -1488,11 +1488,11 @@ export default function InteractiveTest() {
             </div>
 
             {/* Right Column: Trò chuyện cùng cô */}
-            <div className={`lg:col-span-5 flex flex-col min-h-0 lg:border-l-4 border-slate-100 dark:border-slate-800 lg:pl-6 ${activeTab === "chat" ? "flex" : "hidden lg:flex"}`}>
+            <div className={`lg:col-span-6 flex flex-col min-h-0 lg:border-l-4 border-slate-100 dark:border-slate-800 lg:pl-6 ${activeTab === "chat" ? "flex" : "hidden lg:flex"}`}>
              
-             {/* Compact material preview helper inside Chat tab */}
+             {/* Compact material preview helper inside Chat tab - Hidden on Desktop */}
              {stage !== "warmup" && (
-               <div className="bg-amber-50/80 dark:bg-slate-850/80 border border-amber-200 dark:border-slate-800 p-2.5 rounded-2xl mb-3 flex items-center justify-between gap-3 shrink-0 select-none shadow-sm">
+               <div className="bg-amber-50/80 dark:bg-slate-850/80 border border-amber-200 dark:border-slate-800 p-2.5 rounded-2xl mb-3 flex items-center justify-between gap-3 shrink-0 select-none shadow-sm lg:hidden">
                  <div className="flex items-center gap-2 min-w-0">
                    <span className="text-xl shrink-0">
                      {stage === "picture" ? "🖼️" : stage === "reading" ? "📖" : "✍️"}
@@ -1533,7 +1533,7 @@ export default function InteractiveTest() {
                           👩‍🏫
                         </div>
                       )}
-                      <div className={`relative max-w-[80%] px-4 py-3 rounded-2xl text-xs md:text-sm font-black shadow-sm ${
+                      <div className={`relative max-w-[80%] lg:max-w-[88%] px-4 py-3 rounded-2xl text-xs md:text-sm font-black shadow-sm ${
                         msg.role === "ai" 
                           ? "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-750 text-slate-800 dark:text-slate-100 rounded-tl-none" 
                           : "bg-blue-500 text-white rounded-tr-none"
