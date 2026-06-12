@@ -6,10 +6,47 @@ const groq = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
-const mistral = new OpenAI({
-  apiKey: process.env.MISTRAL_API_KEY,
-  baseURL: "https://api.mistral.ai/v1",
-});
+// Helper function to call Gemini 2.5 Flash
+async function queryGeminiFlash(prompt: string): Promise<any> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const payload = {
+    contents: [
+      {
+        parts: [
+          { text: prompt }
+        ]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: "application/json"
+    }
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error("Gemini response is empty.");
+  }
+
+  return JSON.parse(text);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +56,7 @@ export async function POST(req: NextRequest) {
     const stage = formData.get("stage") as string;
     const chatHistoryRaw = formData.get("chatHistory") as string || "[]";
     const contextRaw = formData.get("context") as string || "{}";
+    const mode = formData.get("mode") as string || "practice"; // test vs practice
 
     const chatHistory = JSON.parse(chatHistoryRaw);
     const context = JSON.parse(contextRaw);
@@ -43,12 +81,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Không nhận diện được giọng nói." }, { status: 400 });
     }
 
-    // 2. Prepare System Prompt based on Stage
-    let systemPrompt = `Bạn là giám khảo Tiếng Anh thiếu nhi (Cambridge YLE examiner) cực kỳ thân thiện, vui vẻ. 
-Luôn phản hồi bằng tiếng Anh thật đơn giản, ngắn gọn (1-2 câu), phù hợp với trẻ em 6-10 tuổi.
-Dùng nhiều emoji đáng yêu. 
-BẮT BUỘC TRẢ VỀ JSON với định dạng: { "aiResponse": "câu trả lời của bạn", "stageComplete": boolean }`;
-
+    // 2. Calculate reading accuracy if in reading stage
     let readingAccuracy = 100;
     if (stage === "reading" && transcribedText) {
       const referenceStory = context.referenceStory || "Max is a happy little monkey who lives in a very tall coconut tree in the jungle. He loves to eat sweet yellow bananas every morning. Today, Max looks down and sees a small green frog sitting on a leaf in the pond. The frog is jumping up and down and singing a funny song. Max waves hello and laughs happily!";
@@ -68,149 +101,100 @@ BẮT BUỘC TRẢ VỀ JSON với định dạng: { "aiResponse": "câu trả l
       console.log(`🎯 [Reading Accuracy] Matched ${matchedCount}/${storyWords.length} words. Accuracy: ${readingAccuracy}%`);
     }
 
+    // 3. Construct prompt for Gemini 2.5 Flash
+    let stageInstructions = "";
+    
     if (stage === "warmup") {
-      const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
-      
-      if (aiMessageCount === 0) {
-        systemPrompt += `
-Nhiệm vụ: Bé vừa trả lời Tên của mình. 
-Hãy chào đón bé nồng nhiệt, khen ngợi và hỏi bé câu tiếp theo: "How old are you?"
-BẮT BUỘC set "stageComplete": false.`;
-      } else if (aiMessageCount === 1) {
-        systemPrompt += `
-Nhiệm vụ: Bé vừa trả lời Tuổi của mình.
-Hãy khen bé và hỏi câu tiếp theo: "What is your favorite animal?"
-BẮT BUỘC set "stageComplete": false.`;
-      } else {
-        systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Warm-up & Speaking.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Great job! Let's look at a picture now."
-VÀ BẮT BUỘC set "stageComplete": true. KHÔNG ĐƯỢC HỎI THÊM BẤT KỲ CÂU NÀO KHÁC.`;
-      }
+      const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai" || m.role === "assistant").length;
+      stageInstructions = `
+We are in the Warm-up stage.
+The child's response: "${transcribedText}".
+Number of AI messages sent in warmup so far: ${aiMessageCount}.
+
+Follow this exact flow:
+1. If number of AI messages sent so far is 0: Greet the child warmly, comment on their name, and ask: "How old are you?"
+   Set "stageComplete" to false.
+2. If number of AI messages sent so far is 1: Praise the child's age, and ask: "What is your favorite animal?"
+   Set "stageComplete" to false.
+3. If number of AI messages sent so far is 2 or more: Praise the child's favorite animal, and complete Warm-up by returning EXACTLY this sentence in "aiResponse": "Great job! Let's look at a picture now."
+   Set "stageComplete" to true.`;
     } else if (stage === "picture") {
       const pictureIndex = context.pictureIndex || 0;
       const subQuestionIndex = typeof context.subQuestionIndex === "number" ? context.subQuestionIndex : 0;
       const questions = context.questions || [];
-      
-      if (questions && questions.length > 0) {
-        // New flow: loop over the 5 sub-questions
-        const currentSubQ = questions[subQuestionIndex] || {};
-        const nextSubQ = questions[subQuestionIndex + 1];
-        const keywords = currentSubQ.expectedKeywords ? currentSubQ.expectedKeywords.join(", ") : "";
-        const grammar = currentSubQ.targetGrammar ? currentSubQ.targetGrammar.join(", ") : "";
 
-        if (subQuestionIndex < questions.length - 1 && nextSubQ) {
-          systemPrompt += `
-Nhiệm vụ: Miêu tả tranh (Picture Description) cho Bức Tranh Thứ ${pictureIndex === 0 ? "Nhất" : "Hai"}.
-Học sinh vừa trả lời câu hỏi: "${currentSubQ.examinerScript}".
-Các từ khóa bé nên dùng trong câu trả lời: [${keywords}]. Mẫu ngữ pháp mong đợi: [${grammar}].
-Hãy nhận xét ngắn gọn và khích lệ câu trả lời của bé (khen ngợi nếu bé sử dụng đúng từ khóa/ngữ pháp). Sau đó hỏi câu hỏi tiếp theo để bé trả lời: "${nextSubQ.examinerScript}".
-BẮT BUỘC set "stageComplete": false.`;
-        } else {
-          // Last question of this picture
-          if (pictureIndex === 0) {
-            systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ NHẤT.
-Bé vừa trả lời câu hỏi cuối cùng: "${currentSubQ.examinerScript}".
-Các từ khóa bé nên dùng trong câu trả lời: [${keywords}].
-Hãy nhận xét ngắn gọn câu trả lời của bé.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY Ở CUỐI PHẢN HỒI CỦA BẠN (trong "aiResponse"): "Great job with the first picture! Now let's look at a second picture."
-VÀ BẮT BUỘC set "stageComplete": true.`;
-          } else {
-            systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ HAI (hoàn thành Stage 2).
-Bé vừa trả lời câu hỏi cuối cùng: "${currentSubQ.examinerScript}".
-Các từ khóa bé nên dùng trong câu trả lời: [${keywords}].
-Hãy nhận xét ngắn gọn câu trả lời của bé.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY Ở CUỐI PHẢN HỒI CỦA BẠN (trong "aiResponse"): "Excellent! You did a great job with both pictures. Now, let's read a short story together."
-VÀ BẮT BUỘC set "stageComplete": true.`;
-          }
-        }
-      } else {
-        // Legacy fallback: 2-turn probing per picture
-        const aiMessageCount = chatHistory.filter((m: any) => m.role === "ai").length;
-        const keywords = context.expectedKeywords ? context.expectedKeywords.join(", ") : "";
-        
-        if (aiMessageCount >= 2) {
-           if (pictureIndex === 0) {
-             systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ NHẤT.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Great job with the first picture! Now let's look at a second picture."
-VÀ BẮT BUỘC set "stageComplete": true.`;
-           } else {
-             systemPrompt += `
-Nhiệm vụ: KẾT THÚC phần Miêu tả bức tranh THỨ HAI (hoàn thành Stage 2).
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Excellent! You did a great job with both pictures. Now, let's read a short story together."
-VÀ BẮT BUỘC set "stageComplete": true.`;
-           }
-        } else {
-           systemPrompt += `
-Nhiệm vụ: Miêu tả tranh (Picture Description) cho Bức Tranh Thứ ${pictureIndex === 0 ? "Nhất" : "Hai"}.
-Học sinh đang nhìn một bức tranh có các từ khóa cần nói: [${keywords}].
-Hãy kiểm tra xem học sinh đã nói được các từ khóa nào chưa. Khen ngợi học sinh.
-Nếu còn từ khóa chưa nói, hãy đặt 1 câu hỏi gợi ý thật đơn giản để bé nói ra từ đó (ví dụ: "What is this?" hoặc "What is it doing?").
-BẮT BUỘC set "stageComplete": false.`;
-        }
-      }
+      stageInstructions = `
+We are in the Picture Description stage for Picture ${pictureIndex + 1}.
+Here is the questions array for this picture:
+${JSON.stringify(questions)}
+
+The child is currently at question index: ${subQuestionIndex}.
+Child's response: "${transcribedText}".
+
+Your tasks:
+1. Check if the child's response answers the question at index ${subQuestionIndex} (compare against expectedKeywords and targetGrammar semantically).
+2. Check if the child's response also answers any of the subsequent questions (indices ${subQuestionIndex + 1}, ${subQuestionIndex + 2}, etc.) in the questions array (this is "real-time pacing" / answering questions in advance).
+3. Identify all questions from index ${subQuestionIndex} onwards that the child has successfully answered in this turn.
+4. Output their indices in the "answeredIndices" array (e.g. [0] or [0, 1]).
+5. Collect all keywords that were matched in the child's response from the expectedKeywords lists of the answered questions. Output them in the "keywordsHit" array. Matches can be semantic or word-level.
+6. Determine the "nextSubQuestionIndex": the index of the first unanswered question (e.g. if current is 0 and the child answered 0 and 1, next is 2).
+7. If all questions in the array have been answered (meaning nextSubQuestionIndex >= questions.length), set "stageComplete" to true.
+8. Formulate a cute, encouraging examiner comment (1-2 sentences with emojis) in "aiResponse":
+   - If stageComplete is false: congratulate/praise the child's answer and then ask the question at questions[nextSubQuestionIndex].examinerScript.
+   - If stageComplete is true:
+     - If pictureIndex is 0: the response MUST end with exactly: "Great job with the first picture! Now let's look at a second picture."
+     - If pictureIndex is 1: the response MUST end with exactly: "Excellent! You did a great job with both pictures. Now, let's read a short story together."`;
     } else if (stage === "reading") {
-      systemPrompt += `
-Nhiệm vụ: Nhận xét bài đọc thành tiếng của học sinh (Reading Aloud).
-Học sinh vừa đọc xong câu chuyện ngắn. 
-Hãy khen ngợi sự cố gắng của bé và khích lệ bé cực kỳ nồng nhiệt.
-BẠN BẮT BUỘC PHẢI TRẢ VỀ CHÍNH XÁC CÂU NÀY TRONG "aiResponse": "Fantastic reading! You read the story beautifully. Let's answer a quick question about it now!"
-VÀ BẮT BUỘC set "stageComplete": true.`;
+      stageInstructions = `
+The child has finished reading the story aloud.
+1. Praise the child's reading skills warmly.
+2. The response MUST end with exactly: "Fantastic reading! You read the story beautifully. Let's answer a quick question about it now!"
+3. Set "stageComplete" to true.`;
     } else {
-      // Default / End
-      systemPrompt += `
-Nhiệm vụ: Khen ngợi và kết thúc bài test.
-Hãy nói: "You did amazingly well today! Goodbye and see you next time!" và set "stageComplete": true.`;
+      stageInstructions = `
+The test is ending.
+1. Praise the child for their hard work.
+2. Say: "You did amazingly well today! Goodbye and see you next time!"
+3. Set "stageComplete" to true.`;
     }
 
-    const messages: any[] = [
-      { role: "system", content: systemPrompt },
-    ];
+    const geminiPrompt = `You are a friendly, encouraging Cambridge YLE (Young Learners English) examiner.
+Your job is to talk to a primary student (6-10 years old) in simple English, using short sentences (1-2 sentences) and fun emojis.
 
-    if (chatHistory && chatHistory.length > 0) {
-      chatHistory.forEach((msg: any) => {
-        messages.push({
-          role: msg.role === "ai" ? "assistant" : "user",
-          content: msg.content
-        });
-      });
-    }
+Current stage of the exam: "${stage}"
+Interactive Mode: "${mode}" (practice/test)
+- In "practice" mode, be extra conversational, warm, and guiding.
+- In "test" mode, be standard, structured, and examiner-like.
 
-    if (!transcribedText && chatHistory.length === 0) {
-      messages.push({
-        role: "user",
-        content: "Bé vừa bước vào phòng thi. Hãy chào bé và hỏi tên bé nhé."
-      });
-    } else if (transcribedText) {
-      messages.push({
-        role: "user",
-        content: transcribedText
-      });
-    }
+Chat History so far:
+${JSON.stringify(chatHistory)}
 
-    console.log("🤖 [Mistral AI] Đang sinh phản hồi...");
-    const completion = await mistral.chat.completions.create({
-      model: "mistral-small-latest",
-      messages: messages as any,
-      response_format: { type: "json_object" },
-      max_tokens: 200,
-    });
+Child's latest response: "${transcribedText}"
 
-    const content = completion.choices[0].message.content;
-    if (!content) {
-      throw new Error("Mistral trả về response rỗng");
-    }
+Stage-specific Instructions:
+${stageInstructions}
 
-    const parsed = JSON.parse(content);
-    
+You MUST return a JSON object with the following fields:
+{
+  "aiResponse": "Your response to the child in English (1-2 sentences with emojis)",
+  "stageComplete": true or false,
+  "nextSubQuestionIndex": number (only applicable for "picture" stage),
+  "answeredIndices": [number] (indices of questions answered in this turn, only for "picture" stage),
+  "keywordsHit": ["keyword1", "keyword2"] (list of expected keywords that were found/matched in the child's response, only for "picture" stage)
+}`;
+
+    console.log("🤖 [Gemini 2.5 Flash] Querying Gemini model for interactive-chat...");
+    const parsedData = await queryGeminiFlash(geminiPrompt);
+    console.log("✅ [Gemini 2.5 Flash] Response parsed:", parsedData);
+
     return NextResponse.json({
       success: true,
       transcribedText,
-      aiResponse: parsed.aiResponse,
-      stageComplete: parsed.stageComplete,
+      aiResponse: parsedData.aiResponse,
+      stageComplete: parsedData.stageComplete || false,
+      nextSubQuestionIndex: typeof parsedData.nextSubQuestionIndex === "number" ? parsedData.nextSubQuestionIndex : undefined,
+      answeredIndices: Array.isArray(parsedData.answeredIndices) ? parsedData.answeredIndices : undefined,
+      keywordsHit: Array.isArray(parsedData.keywordsHit) ? parsedData.keywordsHit : undefined,
       readingAccuracy: stage === "reading" ? readingAccuracy : undefined,
     });
 

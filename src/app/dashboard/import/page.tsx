@@ -45,6 +45,8 @@ interface QuestionData {
     topic?: string;
     level?: "Starters" | "Movers" | "Flyers";
     difficulty?: "Easy" | "Medium" | "Hard";
+    groupCode?: string;
+    groupName?: string;
   }[];
   createdAt: string;
 }
@@ -56,6 +58,8 @@ interface SubQuestionInput {
   topic?: string;
   level?: "Starters" | "Movers" | "Flyers" | "";
   difficulty?: "Easy" | "Medium" | "Hard" | "";
+  groupCode?: string;
+  groupName?: string;
 }
 
 export default function CambridgeImportPage() {
@@ -83,6 +87,12 @@ export default function CambridgeImportPage() {
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editTypeKey, setEditTypeKey] = useState("");
   const [editTypeName, setEditTypeName] = useState("");
+
+  const [skillGroups, setSkillGroups] = useState<{ _id?: string; code: string; name: string; description?: string }[]>([]);
+  const [showGroupManager, setShowGroupManager] = useState(false);
+  const [newGroupCode, setNewGroupCode] = useState("");
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
   const [examinerScript, setExaminerScript] = useState("");
@@ -90,12 +100,9 @@ export default function CambridgeImportPage() {
   const [expectedKeywords, setExpectedKeywords] = useState("");
   const [targetGrammar, setTargetGrammar] = useState("");
   const [subQuestions, setSubQuestions] = useState<SubQuestionInput[]>([
-    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" }
+    { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "", groupCode: "", groupName: "" }
   ]);
+  const [teacherWish, setTeacherWish] = useState("");
   
   // Image file & preview states
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -107,6 +114,25 @@ export default function CambridgeImportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleAddSubQuestion = () => {
+    setSubQuestions(prev => [
+      ...prev,
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "", groupCode: "", groupName: "" }
+    ]);
+  };
+
+  const handleRemoveSubQuestion = (idx: number) => {
+    if (subQuestions.length <= 1) {
+      alert("Học liệu phải có ít nhất 1 câu hỏi con!");
+      return;
+    }
+    setSubQuestions(prev => prev.filter((_, i) => i !== idx));
+    if (sandboxSubQIndex >= subQuestions.length - 1) {
+      setSandboxSubQIndex(0);
+      setSandboxResult(null);
+    }
+  };
 
   // Sandbox states & handlers
   const [sandboxSubQIndex, setSandboxSubQIndex] = useState(0);
@@ -228,9 +254,22 @@ export default function CambridgeImportPage() {
     }
   };
 
+  const fetchSkillGroups = async () => {
+    try {
+      const res = await fetch("/api/skill-groups");
+      const data = await res.json();
+      if (data.success) {
+        setSkillGroups(data.data);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách nhóm kỹ năng:", err);
+    }
+  };
+
   useEffect(() => {
     fetchQuestions();
     fetchContextTypes();
+    fetchSkillGroups();
   }, []);
 
   // Auto-fill LEVEL based on QID prefix (only when creating a new question)
@@ -312,6 +351,52 @@ export default function CambridgeImportPage() {
       }
       showToast("success", "Đã xóa loại bối cảnh thành công!");
       fetchContextTypes();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleAddSkillGroup = async () => {
+    if (!newGroupCode.trim() || !newGroupName.trim()) {
+      alert("Vui lòng nhập đầy đủ Mã nhóm và Tên nhóm kỹ năng!");
+      return;
+    }
+    try {
+      const res = await fetch("/api/skill-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          code: newGroupCode.trim(), 
+          name: newGroupName.trim(),
+          description: newGroupDesc.trim() 
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi thêm nhóm kỹ năng");
+      }
+      showToast("success", `Đã thêm nhóm kỹ năng '${newGroupName}' thành công!`);
+      setNewGroupCode("");
+      setNewGroupName("");
+      setNewGroupDesc("");
+      fetchSkillGroups();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteSkillGroup = async (code: string) => {
+    if (!window.confirm(`Admin có chắc chắn muốn xóa nhóm kỹ năng '${code}'? Các câu hỏi đã lưu sẽ không bị mất dữ liệu, nhưng nhóm kỹ năng này sẽ biến mất khỏi danh sách chọn của câu hỏi con.`)) return;
+    try {
+      const res = await fetch(`/api/skill-groups?id=${code}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gặp sự cố khi xóa nhóm kỹ năng");
+      }
+      showToast("success", "Đã xóa nhóm kỹ năng thành công!");
+      fetchSkillGroups();
     } catch (err: any) {
       alert(err.message);
     }
@@ -406,12 +491,9 @@ export default function CambridgeImportPage() {
     setContextTags("");
     setExpectedKeywords("");
     setTargetGrammar("");
+    setTeacherWish("");
     setSubQuestions([
-      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" },
-      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" }
+      { examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "", groupCode: "", groupName: "" }
     ]);
     removeImage();
     setIsEditing(false);
@@ -437,6 +519,7 @@ export default function CambridgeImportPage() {
     setContextTags(q.contextTags ? q.contextTags.join(", ") : "");
     setExpectedKeywords(q.evaluationCriteria?.expectedKeywords ? q.evaluationCriteria.expectedKeywords.join(", ") : "");
     setTargetGrammar(q.evaluationCriteria?.targetGrammar ? q.evaluationCriteria.targetGrammar.join(", ") : "");
+    setTeacherWish("");
     
     // Load sub-questions array
     if (q.questions && q.questions.length > 0) {
@@ -446,12 +529,11 @@ export default function CambridgeImportPage() {
         targetGrammar: sub.targetGrammar ? sub.targetGrammar.join(", ") : "",
         topic: sub.topic || "",
         level: (sub.level || "") as any,
-        difficulty: (sub.difficulty || "") as any
+        difficulty: (sub.difficulty || "") as any,
+        groupCode: sub.groupCode || "",
+        groupName: sub.groupName || ""
       }));
-      while (mapped.length < 5) {
-        mapped.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
-      }
-      setSubQuestions(mapped.slice(0, 5));
+      setSubQuestions(mapped);
     } else {
       // Fallback
       const initial: SubQuestionInput[] = [
@@ -461,12 +543,11 @@ export default function CambridgeImportPage() {
           targetGrammar: q.evaluationCriteria?.targetGrammar ? q.evaluationCriteria.targetGrammar.join(", ") : "",
           topic: "",
           level: "",
-          difficulty: ""
+          difficulty: "",
+          groupCode: "",
+          groupName: ""
         }
       ];
-      while (initial.length < 5) {
-        initial.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
-      }
       setSubQuestions(initial);
     }
 
@@ -517,6 +598,7 @@ export default function CambridgeImportPage() {
     try {
       const formData = new FormData();
       formData.append("image", imageFile);
+      formData.append("teacherWish", teacherWish.trim());
 
       console.log("🤖 Đang tải ảnh lên AI Vision API để phân tích tự động...");
       const res = await fetch("/api/questions/analyze", {
@@ -553,12 +635,11 @@ export default function CambridgeImportPage() {
             targetGrammar: sub.targetGrammar ? sub.targetGrammar.join(", ") : "",
             topic: sub.topic || "",
             level: (sub.level || "") as any,
-            difficulty: (sub.difficulty || "") as any
+            difficulty: (sub.difficulty || "") as any,
+            groupCode: sub.groupCode || "",
+            groupName: sub.groupName || ""
           }));
-          while (mappedQuestions.length < 5) {
-            mappedQuestions.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
-          }
-          setSubQuestions(mappedQuestions.slice(0, 5));
+          setSubQuestions(mappedQuestions);
 
           // Also set fallback top levels
           setExaminerScript(mappedQuestions[0]?.examinerScript || "");
@@ -576,12 +657,11 @@ export default function CambridgeImportPage() {
               targetGrammar: item.targetGrammar ? item.targetGrammar.join(", ") : "",
               topic: "",
               level: "",
-              difficulty: ""
+              difficulty: "",
+              groupCode: "",
+              groupName: ""
             }
           ];
-          while (initial.length < 5) {
-            initial.push({ examinerScript: "", expectedKeywords: "", targetGrammar: "", topic: "", level: "", difficulty: "" });
-          }
           setSubQuestions(initial);
         }
 
@@ -642,7 +722,9 @@ export default function CambridgeImportPage() {
         targetGrammar: q.targetGrammar.split(",").map(s => s.trim()).filter(Boolean),
         topic: q.topic?.trim() || topic.trim() || "General",
         level: q.level || level || "Starters",
-        difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard")
+        difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard"),
+        groupCode: q.groupCode?.trim() || "",
+        groupName: q.groupName?.trim() || ""
       }));
       formData.append("questions", JSON.stringify(parsedSubQuestions));
       
@@ -968,22 +1050,33 @@ export default function CambridgeImportPage() {
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1">Cách nhau bằng dấu phẩy (,)</span>
               </div>
 
-              {/* Row 4: Speaking Questions Editor (5 Dynamic Question blocks) */}
+              {/* Row 4: Speaking Questions Editor (Dynamic Question blocks) */}
               <div className="flex flex-col gap-5 border-t border-slate-100 pt-5 mt-2">
                 <h4 className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                   <Sparkles className="w-5 h-5" />
-                  Danh sách 5 Câu hỏi Speaking trên cùng Bối cảnh
+                  Danh sách Câu hỏi Speaking trên cùng Bối cảnh ({subQuestions.length} câu)
                 </h4>
                 
                 {subQuestions.map((q, idx) => (
-                  <div key={idx} className="bg-slate-50/50 dark:bg-slate-800/30 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-sm relative">
+                  <div key={idx} className="bg-slate-50/50 dark:bg-slate-800/30 border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 md:p-5 flex flex-col gap-4 shadow-sm relative pt-6">
                     <span className="absolute -top-3 left-4 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">
                       Câu hỏi {idx + 1}
                     </span>
+
+                    {subQuestions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubQuestion(idx)}
+                        className="absolute top-2.5 right-2.5 text-rose-500 hover:text-rose-750 p-1.5 rounded-full hover:bg-rose-50 dark:hover:bg-rose-955/20 transition-colors cursor-pointer"
+                        title="Xóa câu hỏi con này"
+                      >
+                        <Trash2 className="w-4.5 h-4.5" />
+                      </button>
+                    )}
                     
                     <div>
                       <label className="block text-slate-700 dark:text-slate-305 font-extrabold text-xs mb-1.5">
-                        Kịch bản của Giám khảo AI (English Question) {idx === 0 && <span className="text-rose-500">*</span>}
+                        Kịch bản của Giám khảo AI (English Question) {idx === 0 && <span className="text-rose-555">*</span>}
                       </label>
                       <input
                         type="text"
@@ -1034,20 +1127,20 @@ export default function CambridgeImportPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
                       <div>
                         <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
                           Chủ đề câu hỏi (Topic override)
                         </label>
                         <input
                           type="text"
-                          value={q.topic}
+                          value={q.topic || ""}
                           onChange={(e) => {
                             const updated = [...subQuestions];
                             updated[idx].topic = e.target.value;
                             setSubQuestions(updated);
                           }}
-                          placeholder="Mặc định dùng chủ đề chung"
+                          placeholder="Mặc định dùng chung"
                           className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
                         />
                       </div>
@@ -1056,7 +1149,7 @@ export default function CambridgeImportPage() {
                           Cấp độ (Level override)
                         </label>
                         <select
-                          value={q.level}
+                          value={q.level || ""}
                           onChange={(e) => {
                             const updated = [...subQuestions];
                             updated[idx].level = e.target.value as any;
@@ -1064,7 +1157,7 @@ export default function CambridgeImportPage() {
                           }}
                           className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
                         >
-                          <option value="">Dùng cấp độ chung</option>
+                          <option value="">Dùng chung</option>
                           <option value="Starters">Starters 🦛</option>
                           <option value="Movers">Movers 🐒</option>
                           <option value="Flyers">Flyers 🦁</option>
@@ -1075,7 +1168,7 @@ export default function CambridgeImportPage() {
                           Độ khó (Difficulty override)
                         </label>
                         <select
-                          value={q.difficulty}
+                          value={q.difficulty || ""}
                           onChange={(e) => {
                             const updated = [...subQuestions];
                             updated[idx].difficulty = e.target.value as any;
@@ -1083,15 +1176,106 @@ export default function CambridgeImportPage() {
                           }}
                           className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
                         >
-                          <option value="">Dùng độ khó chung</option>
+                          <option value="">Dùng chung</option>
                           <option value="Easy">Easy (Dễ)</option>
                           <option value="Medium">Medium (Trung bình)</option>
                           <option value="Hard">Hard (Khó)</option>
                         </select>
                       </div>
+                      <div className="md:col-span-2">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide">
+                            Nhóm kỹ năng
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowGroupManager(true)}
+                            className="text-[9px] font-black text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-0.5 transition-colors cursor-pointer"
+                          >
+                            ⚙️ Quản lý nhóm
+                          </button>
+                        </div>
+                        <select
+                          value={
+                            skillGroups.some(g => g.code === q.groupCode && g.name === q.groupName)
+                              ? `${q.groupCode}|${q.groupName}`
+                              : (q.groupCode || q.groupName ? "custom" : "")
+                          }
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = [...subQuestions];
+                            if (val === "custom") {
+                              if (!updated[idx].groupCode) updated[idx].groupCode = "custom";
+                              if (!updated[idx].groupName) updated[idx].groupName = "Custom Category";
+                            } else if (val === "") {
+                              updated[idx].groupCode = "";
+                              updated[idx].groupName = "";
+                            } else {
+                              const [code, name] = val.split("|");
+                              updated[idx].groupCode = code;
+                              updated[idx].groupName = name;
+                            }
+                            setSubQuestions(updated);
+                          }}
+                          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900 cursor-pointer"
+                        >
+                          <option value="">Không phân nhóm (Dùng chung)</option>
+                          {skillGroups.map((g) => (
+                            <option key={g.code} value={`${g.code}|${g.name}`}>
+                              {g.code} - {g.name} {g.description ? `(${g.description})` : ""}
+                            </option>
+                          ))}
+                          <option value="custom">Khác (Tự nhập...)</option>
+                        </select>
+                      </div>
+
+                      {((q.groupCode || q.groupName) && !skillGroups.some(g => g.code === q.groupCode && g.name === q.groupName)) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 dark:border-slate-800/50 pt-2 mt-2 col-span-1 md:col-span-5 animate-fadeIn">
+                          <div>
+                            <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                              Mã nhóm tùy chỉnh
+                            </label>
+                            <input
+                              type="text"
+                              value={q.groupCode || ""}
+                              onChange={(e) => {
+                                const updated = [...subQuestions];
+                                updated[idx].groupCode = e.target.value;
+                                setSubQuestions(updated);
+                              }}
+                              placeholder="Ví dụ: 1.1"
+                              className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-600 dark:text-slate-400 font-extrabold text-[10px] uppercase tracking-wide mb-1.5">
+                              Tên nhóm kỹ năng tùy chỉnh
+                            </label>
+                            <input
+                              type="text"
+                              value={q.groupName || ""}
+                              onChange={(e) => {
+                                const updated = [...subQuestions];
+                                updated[idx].groupName = e.target.value;
+                                setSubQuestions(updated);
+                              }}
+                              placeholder="Ví dụ: Vocabulary"
+                              className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 p-2.5 text-[11px] font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddSubQuestion}
+                  className="btn-3d-indigo py-3 px-6 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 self-start hover:scale-[1.02] cursor-pointer mt-1"
+                >
+                  <span>+ Thêm câu hỏi con</span>
+                </button>
               </div>
 
               {/* Mobile image selector (shows up here only on smaller screens) */}
@@ -1244,17 +1428,31 @@ export default function CambridgeImportPage() {
               </div>
 
               {imageFile && (
-                <div className="mt-4 flex flex-col gap-3">
+                <div className="mt-4 flex flex-col gap-3 text-left">
                   <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-[11px] font-bold text-slate-500">
                     <span className="truncate max-w-[200px]">{imageFile.name}</span>
                     <span>{(imageFile.size / 1024).toFixed(1)} KB</span>
+                  </div>
+
+                  {/* Textarea for teacher wishes */}
+                  <div className="mt-1">
+                    <label className="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-1.5 font-sans">
+                      Nguyện vọng / Định hướng sư phạm (Tùy chọn) 💡
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={teacherWish}
+                      onChange={(e) => setTeacherWish(e.target.value)}
+                      placeholder="Ví dụ: Chỉ hỏi màu sắc; tạo 3 câu hỏi; hỏi về con mèo..."
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs font-bold text-slate-705 dark:text-slate-200 outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 resize-none font-sans"
+                    />
                   </div>
 
                   <button
                     type="button"
                     onClick={handleAutoDigitalize}
                     disabled={isAnalyzing || isSubmitting}
-                    className="btn-3d-purple w-full py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 hover:scale-[1.02] disabled:opacity-50"
+                    className="btn-3d-purple w-full py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 hover:scale-[1.02] disabled:opacity-50 cursor-pointer"
                   >
                     {isAnalyzing ? (
                       <>
@@ -1824,6 +2022,112 @@ export default function CambridgeImportPage() {
                     className="mt-2 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white p-3 text-sm font-black transition-colors cursor-pointer text-center"
                   >
                     ＋ Thêm loại bối cảnh mới
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {showGroupManager && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-950 rounded-3xl w-full max-w-lg border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="p-5 border-b border-slate-100 dark:border-slate-805 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  ⚙️ Quản lý Nhóm kỹ năng
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGroupManager(false);
+                    setNewGroupCode("");
+                    setNewGroupName("");
+                    setNewGroupDesc("");
+                  }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-extrabold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-5">
+                
+                {/* List of current groups */}
+                <div className="flex flex-col gap-2.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Danh sách hiện tại ({skillGroups.length})</h4>
+                  {skillGroups.length === 0 ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Chưa có nhóm kỹ năng nào. Vui lòng thêm bên dưới.</p>
+                  ) : (
+                    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+                      {skillGroups.map((g) => (
+                        <div key={g.code} className="p-3.5 flex items-center justify-between bg-white dark:bg-slate-900/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">{g.code} - {g.name}</span>
+                            {g.description && (
+                              <span className="text-[10px] font-bold text-slate-505 dark:text-slate-400">{g.description}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSkillGroup(g.code)}
+                              className="text-xs font-black text-rose-500 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-slate-100 dark:border-slate-800" />
+
+                {/* Add Form */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Thêm nhóm kỹ năng mới</h4>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase">Mã nhóm (ví dụ: 1.1, 1.2, 2.1)</label>
+                    <input
+                      type="text"
+                      value={newGroupCode}
+                      onChange={(e) => setNewGroupCode(e.target.value)}
+                      placeholder="Ví dụ: 1.1"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase">Tên nhóm kỹ năng (Tiếng Anh)</label>
+                    <input
+                      type="text"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="Ví dụ: Vocabulary & Pronunciation"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase">Mô tả chi tiết (Tiếng Việt)</label>
+                    <input
+                      type="text"
+                      value={newGroupDesc}
+                      onChange={(e) => setNewGroupDesc(e.target.value)}
+                      placeholder="Ví dụ: Đánh giá từ vựng và phát âm"
+                      className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 p-3 text-sm font-extrabold text-slate-700 dark:text-slate-200 outline-none transition-colors bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddSkillGroup}
+                    className="mt-2 w-full rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white p-3 text-sm font-black transition-colors cursor-pointer text-center"
+                  >
+                    ＋ Thêm nhóm kỹ năng mới
                   </button>
                 </div>
 

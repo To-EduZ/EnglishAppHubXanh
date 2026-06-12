@@ -21,6 +21,8 @@ export interface IQuestion extends Document {
     topic?: string; // Added at sub-question level
     level?: "Starters" | "Movers" | "Flyers"; // Added at sub-question level
     difficulty?: "Easy" | "Medium" | "Hard"; // Added at sub-question level
+    groupCode?: string; // Added for question categorization
+    groupName?: string; // Added for question categorization
   }[]; // Added for One Context - Multiple Questions
   createdAt: Date;
   updatedAt: Date;
@@ -64,6 +66,8 @@ const QuestionSchema: Schema<IQuestion> = new Schema(
             type: String,
             enum: ["Easy", "Medium", "Hard"],
           },
+          groupCode: { type: String, default: "" },
+          groupName: { type: String, default: "" },
         },
       ],
       default: [],

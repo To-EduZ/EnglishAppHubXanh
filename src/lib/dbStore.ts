@@ -7,6 +7,7 @@ interface GlobalWithAssessments {
   inMemoryAssessmentsStore?: any[];
   inMemoryQuestionsStore?: any[];
   inMemoryContextTypesStore?: any[];
+  inMemorySkillGroupsStore?: any[];
 }
 
 const g = globalThis as unknown as GlobalWithAssessments;
@@ -21,6 +22,15 @@ if (!g.inMemoryContextTypesStore) {
     { key: "Object_Card", name: "Object Card (Thẻ vật thể bóc tách)" },
     { key: "Storytelling", name: "Storytelling (Kể chuyện theo tranh liên hoàn)" },
     { key: "Find_Differences", name: "Find the Differences (Tìm điểm khác biệt)" }
+  ];
+}
+
+if (!g.inMemorySkillGroupsStore) {
+  g.inMemorySkillGroupsStore = [
+    { code: "1.1", name: "Vocabulary & Pronunciation", description: "Từ vựng & Phát âm" },
+    { code: "1.2", name: "Grammar & Sentence Structure", description: "Ngữ pháp & Cấu trúc" },
+    { code: "2.1", name: "Speaking Reflexes", description: "Phản xạ nói" },
+    { code: "2.2", name: "Storytelling & Description", description: "Kể chuyện & Miêu tả" }
   ];
 }
 
@@ -77,3 +87,4 @@ if (!g.inMemoryQuestionsStore) {
 export const inMemoryAssessments = g.inMemoryAssessmentsStore;
 export const inMemoryQuestions = g.inMemoryQuestionsStore;
 export const inMemoryContextTypes = g.inMemoryContextTypesStore || [];
+export const inMemorySkillGroups = g.inMemorySkillGroupsStore || [];

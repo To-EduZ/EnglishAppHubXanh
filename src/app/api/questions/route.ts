@@ -222,7 +222,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure each sub-question has level, topic, and difficulty
-    if (questionsList && questionsList.length > 0) {
       questionsList = questionsList.map((q: any, idx: number) => ({
         examinerScript: q.examinerScript || "",
         expectedKeywords: q.expectedKeywords || [],
@@ -230,8 +229,9 @@ export async function POST(req: NextRequest) {
         topic: q.topic || topic || "General",
         level: q.level || level || "Starters",
         difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard"),
+        groupCode: q.groupCode || "",
+        groupName: q.groupName || "",
       }));
-    }
 
     // 8. Create Question document and save to database
     const newQuestion = new Question({
@@ -407,7 +407,6 @@ export async function PUT(req: NextRequest) {
     }
 
     // Ensure each sub-question has level, topic, and difficulty
-    if (questionsList && questionsList.length > 0) {
       questionsList = questionsList.map((q: any, idx: number) => ({
         examinerScript: q.examinerScript || "",
         expectedKeywords: q.expectedKeywords || [],
@@ -415,8 +414,9 @@ export async function PUT(req: NextRequest) {
         topic: q.topic || topic || "General",
         level: q.level || level || "Starters",
         difficulty: q.difficulty || (idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard"),
+        groupCode: q.groupCode || "",
+        groupName: q.groupName || "",
       }));
-    }
 
     // Apply updates
     existingQuestion.level = level as any;

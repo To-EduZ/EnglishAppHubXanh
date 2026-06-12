@@ -3,7 +3,8 @@ import OpenAI from "openai";
 import { v2 as cloudinary } from "cloudinary";
 import { connectToDatabase } from "@/lib/mongodb";
 import Question from "@/models/Question";
-import { inMemoryQuestions } from "@/lib/dbStore";
+import SkillGroup from "@/models/SkillGroup";
+import { inMemoryQuestions, inMemorySkillGroups } from "@/lib/dbStore";
 
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
     // 2. Parse FormData
     const formData = await req.formData();
     const imageFile = formData.get("image") as File | null;
+    const teacherWish = (formData.get("teacherWish") as string | null) || "";
 
     if (!imageFile) {
       return NextResponse.json(
@@ -173,7 +175,6 @@ You MUST respond strictly in the following JSON format:
     console.log("✅ [AI Auto-Digitalizer] Phân tích hoàn tất:", aiResponseContent);
     const parsedData = JSON.parse(aiResponseContent);
     */
-
     // 4. Query Google Gemini 2.5 Flash Model
     console.log(`🤖 [AI Auto-Digitalizer] Đang phân tích nội dung học liệu qua Gemini 2.5 Flash...`);
 
@@ -189,7 +190,10 @@ You MUST respond strictly in the following JSON format:
     const geminiPrompt = `You are an expert Cambridge YLE (Young Learners English - Starters, Movers, Flyers) examiner and curriculum designer for primary children.
 Your task is to analyze the uploaded exam picture (which could be a Scene Description, Object Card, Storytelling sequence, or Find the Differences) and automatically generate structured metadata matching the Cambridge YLE exam standard.
 
-Analyze the image carefully:
+Teacher's custom pedagogy wishes / special context guidelines:
+"${teacherWish}"
+
+Analyze the image carefully and keep the teacher's custom wishes in mind:
 1. Determine the appropriate level ('Starters', 'Movers', or 'Flyers') based on the complexity of vocabulary and objects.
 2. Determine which part of the speaking exam it matches (Part 1, Part 2, Part 3, etc.).
 3. Choose a context type: 'Scene_Description' (if it's a main scene with many activities), 'Object_Card' (if it's a single item like a banana or frog), 'Storytelling' (if it's a comic panel/sequence of scenes), or 'Find_Differences' (if it has two similar pictures).
@@ -197,14 +201,17 @@ Analyze the image carefully:
 5. Identify the main general topic (e.g. "Family", "Animals", "School life", "Classroom", "Nature", "Home", "Playground", "Food", "Hobbies", "Transport").
 6. Determine the overall difficulty level of this question block ('Easy', 'Medium', or 'Hard').
 7. Provide a list of 'contextTags' describing elements of the image (e.g. ["bedroom", "cat", "animals", "sleeping", "boy"]).
-8. Generate EXACTLY 5 interactive sub-questions (questions array) for this single image/context. The sub-questions must progress in difficulty and focus on different elements/objects in the image.
+8. Generate a dynamic list of interactive sub-questions (questions array) for this image/context:
+   - Determine how many questions are appropriate based on the image detail and the teacher's wishes (usually between 3 and 8 questions). If the teacher specified a desired number of questions, obey it!
    - For each sub-question:
-     - Provide a professional, friendly, child-appropriate 'examinerScript' (what the AI examiner will ask the student in English). Keep sentences simple and use standard YLE prompts.
+     - Provide a professional, friendly, child-appropriate 'examinerScript' (what the AI examiner will ask the student in English). Keep sentences simple.
      - Determine 'expectedKeywords' (the critical English vocabulary the child is expected to say in response).
      - Determine 'targetGrammar' structures (e.g., ["present continuous", "prepositions", "there is", "there are"]).
-     - Add 'topic' (use the main general topic).
+     - Add 'topic' (use the main topic or specific sub-topic).
      - Add 'level' (use the main level).
-     - Add 'difficulty' ('Easy' for question 1 and 2, 'Medium' for question 3 and 4, 'Hard' for question 5 to represent progressive difficulty).
+     - Add 'difficulty' ('Easy', 'Medium', or 'Hard' depending on the progression of questions).
+     - Generate a 'groupCode': a group identifier representing the category of the question (e.g. "1.1" for vocabulary assessment, "1.2" for grammar structure, "2.1" for speaking reflexes, "2.2" for storytelling details).
+     - Generate a 'groupName': the name of the skill/category (e.g. "Vocabulary & Pronunciation", "Grammar & Sentence Structure", "Interactive Speaking Reflexes", "Linguistic Description").
 
 You MUST respond strictly in the following JSON format:
 {
@@ -222,7 +229,9 @@ You MUST respond strictly in the following JSON format:
       "targetGrammar": ["grammar1"],
       "topic": "string",
       "level": "Starters" | "Movers" | "Flyers",
-      "difficulty": "Easy" | "Medium" | "Hard"
+      "difficulty": "Easy" | "Medium" | "Hard",
+      "groupCode": "string",
+      "groupName": "string"
     }
   ]
 }`;
@@ -289,12 +298,72 @@ You MUST respond strictly in the following JSON format:
     }
 
     // Populate sub-question fields
+    // Connect to database and fetch skill groups dynamically
+    const { isFallback } = await connectToDatabase();
+    let dbSkillGroups: any[] = [];
+    if (isFallback) {
+      dbSkillGroups = inMemorySkillGroups;
+    } else {
+      try {
+        dbSkillGroups = await SkillGroup.find({});
+        if (dbSkillGroups.length === 0) {
+          const DEFAULT_GROUPS = [
+            { code: "1.1", name: "Vocabulary & Pronunciation", description: "Từ vựng & Phát âm" },
+            { code: "1.2", name: "Grammar & Sentence Structure", description: "Ngữ pháp & Cấu trúc" },
+            { code: "2.1", name: "Speaking Reflexes", description: "Phản xạ nói" },
+            { code: "2.2", name: "Storytelling & Description", description: "Kể chuyện & Miêu tả" }
+          ];
+          await SkillGroup.insertMany(DEFAULT_GROUPS);
+          dbSkillGroups = await SkillGroup.find({});
+        }
+      } catch (err) {
+        console.error("Error fetching skill groups for analyze post-processing:", err);
+        dbSkillGroups = [
+          { code: "1.1", name: "Vocabulary & Pronunciation" },
+          { code: "1.2", name: "Grammar & Sentence Structure" },
+          { code: "2.1", name: "Speaking Reflexes" },
+          { code: "2.2", name: "Storytelling & Description" }
+        ];
+      }
+    }
+
+    const skillGroupsMap: Record<string, string> = {};
+    dbSkillGroups.forEach((g: any) => {
+      skillGroupsMap[g.code] = g.name;
+    });
+
+    // Populate sub-question fields
     if (parsedData.questions && parsedData.questions.length > 0) {
       parsedData.questions.forEach((q: any, idx: number) => {
         if (!q.topic) q.topic = parsedData.topic;
         if (!q.level) q.level = parsedData.level || "Starters";
         if (!q.difficulty) {
           q.difficulty = idx < 2 ? "Easy" : idx < 4 ? "Medium" : "Hard";
+        }
+
+        if (q.groupCode && skillGroupsMap[q.groupCode]) {
+          q.groupName = skillGroupsMap[q.groupCode];
+        } else if (q.groupName) {
+          const lowerName = q.groupName.toLowerCase();
+          const matchedGroup = dbSkillGroups.find((g: any) => 
+            lowerName.includes(g.name.toLowerCase()) || g.name.toLowerCase().includes(lowerName)
+          );
+          if (matchedGroup) {
+            q.groupCode = matchedGroup.code;
+            q.groupName = matchedGroup.name;
+          }
+        }
+
+        if (!q.groupCode) {
+          const codes = Object.keys(skillGroupsMap);
+          if (codes.length > 0) {
+            q.groupCode = idx < 2 ? codes[0] : idx < 4 && codes.length > 1 ? codes[1] : codes[2] || codes[0];
+          } else {
+            q.groupCode = "1.1";
+          }
+        }
+        if (!q.groupName) {
+          q.groupName = skillGroupsMap[q.groupCode] || "Vocabulary & Pronunciation";
         }
       });
     }
@@ -303,7 +372,6 @@ You MUST respond strictly in the following JSON format:
     let baseId = parsedData.id || "ST_P1_01";
     baseId = baseId.trim().toUpperCase();
 
-    const { isFallback } = await connectToDatabase();
     let finalId = baseId;
     let exists = true;
     let counter = 1;

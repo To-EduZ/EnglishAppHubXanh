@@ -130,10 +130,13 @@ export default function InteractiveTest() {
   const [realtimeTranscript, setRealtimeTranscript] = useState("");
   const [isSpeechSupported, setIsSpeechSupported] = useState(true);
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false);
+  const [interactiveMode, setInteractiveMode] = useState<"practice" | "test">("practice");
+  const [showVocabularyHint, setShowVocabularyHint] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const realtimeTranscriptRef = useRef("");
+  const hesitationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const voices = [
     { code: "en-US-AriaNeural", name: "Mỹ (Nữ) 🇺🇸" },
@@ -390,6 +393,24 @@ export default function InteractiveTest() {
       recorder.start();
       setIsRecording(true);
 
+      // Start hesitation timer of 5 seconds in practice mode
+      if (interactiveMode === "practice") {
+        setShowVocabularyHint(false);
+        if (hesitationTimerRef.current) clearTimeout(hesitationTimerRef.current);
+        hesitationTimerRef.current = setTimeout(() => {
+          console.log("⏱️ Hesitation detected (5 seconds)!");
+          // Check if user has spoken any keywords of the current question
+          const currentWords = realtimeTranscriptRef.current.toLowerCase();
+          const currentQ = currentQuestion?.questions?.[subQuestionIndex];
+          const expected = currentQ?.expectedKeywords || [];
+          const hasMatchedAny = expected.some((kw: string) => currentWords.includes(kw.toLowerCase()));
+          
+          if (!hasMatchedAny) {
+            setShowVocabularyHint(true);
+          }
+        }, 5000);
+      }
+
       if (isRealtimeMode) {
         setRealtimeTranscript("");
         realtimeTranscriptRef.current = "";
@@ -416,6 +437,12 @@ export default function InteractiveTest() {
             if (currentText) {
               setRealtimeTranscript(currentText);
               realtimeTranscriptRef.current = currentText;
+
+              // Clear hesitation timer since they started speaking!
+              if (hesitationTimerRef.current) {
+                clearTimeout(hesitationTimerRef.current);
+                hesitationTimerRef.current = null;
+              }
 
               if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
               silenceTimerRef.current = setTimeout(() => {
@@ -472,6 +499,12 @@ export default function InteractiveTest() {
       mediaRecorderRef.current.stop();
     }
     setIsRecording(false);
+
+    // Clear hesitation timer when recording stops
+    if (hesitationTimerRef.current) {
+      clearTimeout(hesitationTimerRef.current);
+      hesitationTimerRef.current = null;
+    }
   }
 
   async function handleAudioSubmission(audioBlob: Blob) {
@@ -482,10 +515,18 @@ export default function InteractiveTest() {
     realtimeTranscriptRef.current = "";
     setRealtimeTranscript("");
 
+    // Clear and hide hint on submission
+    setShowVocabularyHint(false);
+    if (hesitationTimerRef.current) {
+      clearTimeout(hesitationTimerRef.current);
+      hesitationTimerRef.current = null;
+    }
+
     try {
       const formData = new FormData();
       formData.append("audio", audioBlob);
       formData.append("stage", stage);
+      formData.append("mode", interactiveMode);
       
       if (transcriptText) {
         formData.append("text", transcriptText);
@@ -547,12 +588,12 @@ export default function InteractiveTest() {
 
         // 4. Track keywords and probing turns during Stage 2 Picture description
         if (stage === "picture" && currentQuestion) {
-          const expected = currentQuestion.questions?.[subQuestionIndex]?.expectedKeywords || currentQuestion.evaluationCriteria?.expectedKeywords || [];
-          const spoken = (data.transcribedText || "").toLowerCase();
-          const newlyFound = expected.filter((kw: string) => spoken.includes(kw.toLowerCase()));
-          
+          const newlyFound = data.keywordsHit || [];
           setKeywordsMentioned((prev) => Array.from(new Set([...prev, ...newlyFound])));
-          setProbingTurnsCount(prev => prev + 1);
+          
+          // Increment probing turns count based on how many sub-questions were processed/answered in this turn
+          const turnsCompleted = (data.answeredIndices?.length || 1);
+          setProbingTurnsCount(prev => prev + turnsCompleted);
         }
 
         // 5. Track reading accuracy in Stage 3 Reading Aloud
@@ -562,7 +603,11 @@ export default function InteractiveTest() {
 
         // 6. Handle automatic stage transitions
         if (stage === "picture" && !data.stageComplete) {
-          setSubQuestionIndex(prev => prev + 1);
+          if (typeof data.nextSubQuestionIndex === "number") {
+            setSubQuestionIndex(data.nextSubQuestionIndex);
+          } else {
+            setSubQuestionIndex(prev => prev + 1);
+          }
         }
 
         if (data.stageComplete) {
@@ -1211,6 +1256,38 @@ export default function InteractiveTest() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
+          {/* Mode Switcher */}
+          <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => {
+                setInteractiveMode("practice");
+                setShowVocabularyHint(false);
+              }}
+              className={`px-2 md:px-3 py-1 rounded-xl text-[9px] md:text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
+                interactiveMode === "practice"
+                  ? "bg-gradient-to-r from-emerald-400 to-green-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              Luyện tập 🎮
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInteractiveMode("test");
+                setShowVocabularyHint(false);
+              }}
+              className={`px-2 md:px-3 py-1 rounded-xl text-[9px] md:text-[10px] font-black tracking-wide uppercase transition-all cursor-pointer ${
+                interactiveMode === "test"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              Thi thử 🏆
+            </button>
+          </div>
+
           {/* AI Accent Selector */}
           <div className="relative">
             <select
@@ -1318,12 +1395,12 @@ export default function InteractiveTest() {
                    <h3 className="font-extrabold text-amber-700 dark:text-amber-300 flex items-center justify-between mb-3 text-xs uppercase tracking-wider">
                      <div className="flex items-center gap-2">
                        <span className="text-lg">🖼️</span>
-                       <span>Bức tranh {pictureIndex + 1}/2 — Thử thách {subQuestionIndex + 1}/5</span>
+                       <span>Bức tranh {pictureIndex + 1}/2 — Thử thách {subQuestionIndex + 1}/{currentQuestion.questions?.length || 5}</span>
                      </div>
                      
                      {/* Cambridge shield trackers */}
                      <div className="flex gap-0.5">
-                       {Array.from({ length: 5 }).map((_, i) => (
+                       {Array.from({ length: currentQuestion.questions?.length || 5 }).map((_, i) => (
                          <YleShield key={i} filled={i <= subQuestionIndex} />
                        ))}
                      </div>
@@ -1584,6 +1661,28 @@ export default function InteractiveTest() {
       {/* Shared Bottom Control Panel */}
       <div className="bg-white dark:bg-slate-900 border-t-4 border-slate-150 dark:border-slate-800 p-3 md:p-4 rounded-t-3xl shadow-lg shrink-0 select-none">
         <div className="max-w-6xl mx-auto flex flex-col gap-2.5">
+
+          {/* Practice Mode Vocabulary Hints Card */}
+          {showVocabularyHint && interactiveMode === "practice" && (
+            <div className="bg-amber-50 dark:bg-amber-955/20 border-2 border-dashed border-amber-300 dark:border-amber-905 rounded-2xl p-3 text-left animate-bounce-subtle shrink-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-lg">💡</span>
+                <h5 className="text-xs font-black uppercase text-amber-700 dark:text-amber-400 font-sans">Gợi ý từ vựng cho con:</h5>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(stage === "picture" 
+                  ? currentQuestion?.questions?.[subQuestionIndex]?.expectedKeywords 
+                  : stage === "reading" 
+                  ? activeStory.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").split(/\s+/).slice(0, 5) 
+                  : []
+                )?.map((kw: string) => (
+                  <span key={kw} className="bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 border border-slate-205 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold shadow-sm font-sans">
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Real-time transcript / Soundwave display */}
           <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 px-4 py-2.5 rounded-2xl h-14 flex items-center justify-between overflow-hidden">
