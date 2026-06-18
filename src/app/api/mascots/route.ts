@@ -48,3 +48,70 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const body = await req.json();
+
+    if (!body.id || !body.name) {
+      return NextResponse.json({ success: false, error: "Missing required fields (id, name)" }, { status: 400 });
+    }
+
+    const existing = await Mascot.findOne({ id: body.id });
+    if (existing) {
+      return NextResponse.json({ success: false, error: "Mascot ID already exists" }, { status: 400 });
+    }
+
+    // Default configuration for a new Mascot
+    const newMascot = new Mascot({
+      id: body.id,
+      name: body.name,
+      description: body.description || "",
+      avatarUrl: body.avatarUrl || "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
+      images: body.images || {
+        idle: body.avatarUrl || "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
+      },
+      dialogue: body.dialogue || {
+        speaking: "Đang nói...",
+        listening: "Đang nghe...",
+        thinking: "Đang suy nghĩ...",
+      },
+      themeColors: body.themeColors || {
+        ring: "border-slate-300 dark:border-slate-700",
+        bg: "bg-slate-50 dark:bg-slate-800",
+        text: "text-slate-600 dark:text-slate-300",
+        border: "border-slate-200 dark:border-slate-700",
+      }
+    });
+
+    await newMascot.save();
+    return NextResponse.json({ success: true, data: newMascot });
+  } catch (error: any) {
+    console.error("Error creating mascot:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Missing mascot ID" }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    const deletedMascot = await Mascot.findOneAndDelete({ id });
+
+    if (!deletedMascot) {
+      return NextResponse.json({ success: false, error: "Mascot not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: deletedMascot });
+  } catch (error: any) {
+    console.error("Error deleting mascot:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
