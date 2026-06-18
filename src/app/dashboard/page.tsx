@@ -209,12 +209,20 @@ export default function DashboardPage() {
 
       <header className="w-full bg-white dark:bg-slate-900 border-b-4 border-slate-100 dark:border-slate-700 py-3 md:py-4 px-3 md:px-4 sticky top-0 z-30 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" />
-              QUAY VỀ
-            </button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/">
+              <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
+                <ArrowLeft className="w-4 h-4" />
+                QUAY VỀ
+              </button>
+            </Link>
+            <Link href="/dashboard/mascots">
+              <button className="btn-3d-gray px-4 py-2.5 text-xs font-black flex items-center gap-1">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                QUẢN LÝ MASCOT
+              </button>
+            </Link>
+          </div>
 
           <div className="flex items-center gap-1.5 md:gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 md:px-4 py-1 md:py-1.5 rounded-2xl">
             <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />

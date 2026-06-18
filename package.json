@@ -10,6 +10,7 @@
     "db:seed": "node seed.js",
     "db:restore": "node restore_db.js",
     "db:sync": "node sync_cloudinary_to_mongodb.js",
+    "db:sync:mascots": "node sync_mascots_to_mongodb.js",
     "db:check": "node check_db.js"
   },
   "dependencies": {

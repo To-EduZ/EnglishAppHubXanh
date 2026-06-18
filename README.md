@@ -53,12 +53,21 @@ MONGODB_URI=your_mongodb_connection_string
 npm install
 ```
 
-### 3. Gieo dữ liệu mẫu (Seeding Database)
-Ứng dụng cung cấp sẵn một tập lệnh gieo dữ liệu để tạo nhanh tài khoản học viên nhí mẫu, các câu hỏi mẫu và lịch sử bài tập làm mẫu vào database trực tuyến/cục bộ của bạn:
+### 3. Gieo dữ liệu và Đồng bộ (Database Seeding & Sync)
+Ứng dụng có các tập lệnh giúp bạn tự động gieo dữ liệu và đồng bộ ảnh từ Cloudinary về MongoDB:
 
-```bash
-node seed.js
-```
+*   **Tạo dữ liệu mẫu ban đầu**:
+    ```bash
+    npm run db:seed
+    ```
+*   **Đồng bộ dữ liệu câu hỏi (từ thư mục `hubxanh_yle_pdf_digitalizer/`)**:
+    ```bash
+    npm run db:sync
+    ```
+*   **Đồng bộ hình ảnh Mascot (từ thư mục `mascots/`)**:
+    ```bash
+    npm run db:sync:mascots
+    ```
 
 ### 4. Khởi chạy máy chủ phát triển
 ```bash
