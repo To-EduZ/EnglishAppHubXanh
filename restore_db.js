@@ -212,13 +212,13 @@ async function run() {
   try {
     await mongoose.connect(mongodbUri);
     console.log("Connected to MongoDB.");
-    
+
     await Question.deleteMany({});
     console.log("Cleared mock questions.");
-    
+
     await Question.insertMany(restoredQuestions);
     console.log("Restored original questions from Cloudinary data!");
-    
+
   } catch (err) {
     console.error(err);
   } finally {

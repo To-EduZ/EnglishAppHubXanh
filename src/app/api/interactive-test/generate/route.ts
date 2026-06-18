@@ -38,7 +38,7 @@ const fallbackQuestions = [
 export async function GET(req: NextRequest) {
   try {
     let picQuestions: any[] = [];
-    
+
     // 1. Attempt to load from MongoDB collect
     const { isFallback } = await connectToDatabase();
     if (!isFallback) {
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     // 2. Select 2 random pictures (ensure index range safety)
     const shuffled = [...picQuestions].sort(() => 0.5 - Math.random());
     const selectedPictures = shuffled.slice(0, 2);
-    
+
     // Fallback duplication safety
     if (selectedPictures.length < 2) {
       selectedPictures.push(picQuestions[0]);
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     // 3. Extract keywords to weave
     const keywords1 = selectedPictures[0].evaluationCriteria?.expectedKeywords || ["animal"];
     const keywords2 = selectedPictures[1].evaluationCriteria?.expectedKeywords || ["nature"];
-    
+
     const themeWords = Array.from(new Set([...keywords1, ...keywords2]));
 
     console.log(`🤖 [Generator API] Đang sinh đề thi tương tác AI theo các từ khóa chủ đề: [${themeWords.join(", ")}]`);
@@ -132,10 +132,10 @@ BẮT BUỘC TRẢ VỀ JSON VỚI ĐỊNH DẠNG CHÍNH XÁC SAU, KHÔNG THÊM 
 
   } catch (error: any) {
     console.error("❌ Lỗi API generate interactive-test:", error);
-    
+
     // Static backup response if Mistral/API is unavailable
     const backupStory = "Max is a happy little monkey who lives in a very tall coconut tree in the jungle. He loves to eat sweet yellow bananas every morning. Today, Max looks down and sees a small green frog sitting on a leaf in the pond. The frog is jumping up and down and singing a funny song. Max waves hello and laughs happily!";
-    
+
     return NextResponse.json({
       success: true,
       pictures: fallbackQuestions.slice(0, 2),

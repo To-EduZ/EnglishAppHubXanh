@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "node seed.js",
+    "db:restore": "node restore_db.js",
+    "db:sync": "node sync_cloudinary_to_mongodb.js",
+    "db:check": "node check_db.js"
   },
   "dependencies": {
     "cloudinary": "^2.10.0",
