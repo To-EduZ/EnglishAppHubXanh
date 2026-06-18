@@ -9,6 +9,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import DevelopmentRadarChart from "@/components/DevelopmentRadarChart";
+import { useMascot } from "@/contexts/MascotContext";
+import { MascotAvatar } from "@/components/MascotAvatar";
 
 type Stage = "intro" | "warmup" | "picture" | "reading" | "writing" | "results";
 
@@ -51,73 +53,10 @@ const Soundwave = () => (
   </div>
 );
 
-const TeacherAvatar = ({ state }: { state: "idle" | "speaking" | "listening" | "thinking" }) => {
-  let ringColor = "border-blue-300 dark:border-blue-700";
-  let pulseClass = "";
-  let badgeText = "Cô Lily AI 👩‍🏫";
-  let badgeTheme = "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-955/40 dark:text-blue-300 dark:border-blue-850";
-
-  if (state === "speaking") {
-    ringColor = "border-emerald-400 dark:border-emerald-600";
-    pulseClass = "animate-pulse ring-4 ring-emerald-100 dark:ring-emerald-950/20";
-    badgeText = "Cô Lily đang nói... 🔊";
-    badgeTheme = "bg-emerald-50 text-emerald-600 border-emerald-250 dark:bg-emerald-955/40 dark:text-emerald-350 dark:border-emerald-900";
-  } else if (state === "listening") {
-    ringColor = "border-rose-400 dark:border-rose-600";
-    pulseClass = "animate-pulse ring-4 ring-rose-100 dark:ring-rose-950/20";
-    badgeText = "Cô đang nghe con nè... 🎤";
-    badgeTheme = "bg-rose-50 text-rose-600 border-rose-255 dark:bg-rose-955/40 dark:text-rose-350 dark:border-rose-900";
-  } else if (state === "thinking") {
-    ringColor = "border-amber-400 dark:border-amber-600";
-    pulseClass = "animate-pulse ring-4 ring-amber-100 dark:ring-amber-950/20";
-    badgeText = "Cô đang suy nghĩ... 🧠";
-    badgeTheme = "bg-amber-50 text-amber-600 border-amber-250 dark:bg-amber-955/40 dark:text-amber-350 dark:border-amber-900";
-  }
-
-  return (
-    <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 w-full select-none">
-      <div className={`relative w-12 h-12 rounded-full border-2 ${ringColor} ${pulseClass} transition-all duration-300 flex items-center justify-center bg-sky-50 dark:bg-slate-800 shadow-sm shrink-0`}>
-        {/* Cute female teacher avatar SVG */}
-        <svg className="w-8 h-8 text-indigo-500 fill-indigo-100 dark:text-indigo-400 dark:fill-indigo-950/30" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-          <circle cx="10.5" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
-          <circle cx="13.5" cy="8" r="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
-          <line x1="12" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1" />
-        </svg>
-        {state === "speaking" && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 text-[8px] items-center justify-center">🔊</span>
-          </span>
-        )}
-        {state === "listening" && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 text-[8px] items-center justify-center">🎤</span>
-          </span>
-        )}
-        {state === "thinking" && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 text-[8px] items-center justify-center">🧠</span>
-          </span>
-        )}
-      </div>
-      
-      <div className="flex-1 min-w-0 text-left">
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-black text-slate-800 dark:text-slate-100">Cô Lily AI</span>
-          <span className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-[8px] px-1 py-0.2 rounded font-mono font-black uppercase">PRO</span>
-        </div>
-        <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black border shadow-sm ${badgeTheme}`}>
-          {badgeText}
-        </span>
-      </div>
-    </div>
-  );
-};
+// TeacherAvatar has been replaced by MascotAvatar
 
 export default function InteractiveTest() {
+  const { currentMascot, availableMascots, setMascotId } = useMascot();
   const [stage, setStage] = useState<Stage>("intro");
   const [activeTab, setActiveTab] = useState<"progress" | "chat">("chat");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -872,7 +811,7 @@ export default function InteractiveTest() {
           <span className="text-4xl absolute inset-0 flex items-center justify-center animate-bounce">👩‍🏫</span>
         </div>
         <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 animate-pulse">
-          Cô giáo AI đang soạn bộ đề thi riêng cho con...
+          {currentMascot.name} đang soạn bộ đề thi riêng cho con...
         </h2>
         <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-3 max-w-sm leading-relaxed">
           Đợi một chút xíu nhé! Cô đang lấy những bức tranh đẹp nhất từ MongoDB và nhờ trí tuệ nhân tạo dệt thành câu chuyện đọc hiểu lôi cuốn nhất dành riêng cho con đấy! 🚀✨
@@ -1221,10 +1160,12 @@ export default function InteractiveTest() {
       {/* Header with Stage indicators */}
       <div className="bg-white dark:bg-slate-900 p-2 sm:p-3 md:p-4 shadow-md flex items-center justify-between sticky top-0 z-20 border-b dark:border-slate-700 rounded-b-3xl select-none gap-2">
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 dark:bg-blue-955/50 flex items-center justify-center text-lg sm:text-xl shadow-inner border-2 border-blue-200">👩‍🏫</div>
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl shadow-inner border-2 overflow-hidden ${currentMascot.themeColors.bg} ${currentMascot.themeColors.ring}`}>
+            <Image src={currentMascot.avatarUrl} alt={currentMascot.name} width={40} height={40} className="object-cover" />
+          </div>
           <div className="min-w-0">
             <h2 className="text-xs sm:text-sm md:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-1">
-              <span className="truncate">Cô Lily</span>
+              <span className="truncate">{currentMascot.name}</span>
               <span className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-[8px] px-1 py-0.2 rounded font-mono font-black uppercase">PRO</span>
             </h2>
             <p className="text-[9px] sm:text-[10px] text-blue-500 font-extrabold capitalize truncate">
@@ -1289,7 +1230,7 @@ export default function InteractiveTest() {
           </div>
 
           {/* AI Accent Selector */}
-          <div className="relative">
+          <div className="relative hidden lg:block">
             <select
               value={selectedVoice}
               onChange={(e) => handleVoiceChange(e.target.value)}
@@ -1302,6 +1243,23 @@ export default function InteractiveTest() {
               ))}
             </select>
             <span className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs pointer-events-none">🌐</span>
+            <span className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 text-[6px] sm:text-[7px] pointer-events-none opacity-60">▼</span>
+          </div>
+
+          {/* Mascot Selector */}
+          <div className="relative">
+            <select
+              value={currentMascot.id}
+              onChange={(e) => setMascotId(e.target.value)}
+              className="appearance-none bg-amber-50 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-2 border-amber-200 dark:border-slate-700 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs font-black rounded-2xl pl-6 sm:pl-8 pr-5 sm:pr-7 py-1.5 sm:py-2 transition-all shadow-sm focus:outline-none cursor-pointer"
+            >
+              {availableMascots.map((m) => (
+                <option key={m.id} value={m.id} className="dark:bg-slate-900 dark:text-slate-200 font-bold">
+                  {m.name}
+                </option>
+              ))}
+            </select>
+            <span className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs pointer-events-none">✨</span>
             <span className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 text-[6px] sm:text-[7px] pointer-events-none opacity-60">▼</span>
           </div>
 
@@ -1527,7 +1485,7 @@ export default function InteractiveTest() {
                    </div>
                    
                    <p className="text-slate-750 dark:text-slate-200 font-extrabold text-sm md:text-base leading-relaxed mb-6 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 rounded-2xl border border-slate-100 dark:border-slate-750 w-full text-center">
-                     Cô Lily hỏi: "{activeSpelling[writingTaskIndex].prompt}"
+                     {currentMascot.name} hỏi: "{activeSpelling[writingTaskIndex].prompt}"
                    </p>
 
                    <form onSubmit={handleWritingSubmit} className="w-full">
@@ -1598,18 +1556,21 @@ export default function InteractiveTest() {
              )}
 
               {/* Dialogue exchange box (auto scroll) */}
+              <div className="p-4 w-full bg-white dark:bg-slate-900 shrink-0">
+                 <MascotAvatar state={getTeacherState()} />
+              </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center text-slate-405 dark:text-slate-600 gap-3 py-10">
                     <span className="text-4xl animate-pulse">👋</span>
-                    <p className="text-xs font-black">Hãy nói gì đó để bắt đầu trò chuyện cùng cô Lily nhé!</p>
+                    <p className="text-xs font-black">Hãy nói gì đó để bắt đầu trò chuyện cùng {currentMascot.name} nhé!</p>
                   </div>
                 ) : (
                   messages.map((msg, idx) => (
                     <div key={idx} className={`flex items-start gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                       {msg.role === "ai" && (
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-955 flex items-center justify-center border border-blue-200 shrink-0 text-sm select-none shadow-sm">
-                          👩‍🏫
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-blue-200 shrink-0 overflow-hidden ${currentMascot.themeColors.bg} ${currentMascot.themeColors.ring}`}>
+                           <Image src={currentMascot.avatarUrl} alt={currentMascot.name} width={32} height={32} className="object-cover" />
                         </div>
                       )}
                       <div className={`relative max-w-[80%] lg:max-w-[88%] px-4 py-3 rounded-2xl text-xs md:text-sm font-black shadow-sm ${
@@ -1645,7 +1606,7 @@ export default function InteractiveTest() {
                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
                      </div>
-                     <span>Cô Lily đang suy nghĩ...</span>
+                     <span>{currentMascot.name} đang suy nghĩ...</span>
                    </div>
                  </div>
                )}
@@ -1703,7 +1664,7 @@ export default function InteractiveTest() {
                     ? "Con hãy gõ câu trả lời vào ô nhập liệu nhé! ✍️" 
                     : showMcq 
                     ? "Con hãy chọn một đáp án trắc nghiệm ở trên nhé! 🧩" 
-                    : "Micro đã tắt. Bấm nút dưới để trả lời cô Lily. 🎤"}
+                    : `Micro đã tắt. Bấm nút dưới để trả lời ${currentMascot.name}. 🎤`}
                 </p>
               </div>
             )}
