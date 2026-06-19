@@ -323,7 +323,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     <span className="text-lg">{levelAnimal[level] || "📖"}</span>
-                    <span>{level}: {count} bài</span>
+                    <span>{level}: {count as number} bài</span>
                   </div>
                 ))}
               </div>
@@ -426,7 +426,7 @@ export default function DashboardPage() {
                 </h3>
 
                 <div className="flex flex-wrap gap-3">
-                  {topWrongWords.map((item, index) => {
+                  {topWrongWords.map((item: WordFrequency, index: number) => {
                     const severity = item.count >= 3 ? "bg-rose-500 text-white" : item.count >= 2 ? "bg-orange-400 text-white" : "bg-yellow-300 text-slate-800";
                     return (
                       <div

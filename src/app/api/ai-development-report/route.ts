@@ -8,18 +8,11 @@ export async function GET(req: NextRequest) {
   try {
     const { isFallback } = await connectToDatabase();
     
-    // 1. Fetch assessments history with projection (only fetch fields needed for the report)
+    // 1. Fetch assessments history
     let resultsList = [];
     if (!isFallback) {
       try {
-        resultsList = await AssessmentResult.find({}, {
-          skill: 1,
-          level: 1,
-          score: 1,
-          stars: 1,
-          mispronouncedWords: 1,
-          createdAt: 1
-        }).sort({ createdAt: -1 });
+        resultsList = await AssessmentResult.find().sort({ createdAt: -1 });
       } catch (dbError) {
         console.warn("⚠️ Cannot read from MongoDB, fallback to memory store.");
         resultsList = [...inMemoryAssessments];
