@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
+
+export const maxDuration = 60;
+
 import AssessmentResult from "@/models/AssessmentResult";
 import { callGemini, safeJsonParse } from "@/lib/geminiClient";
 
