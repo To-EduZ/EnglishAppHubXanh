@@ -155,23 +155,122 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: result });
     }
 
-    // 2. LẤY TOÀN BỘ DANH SÁCH BÀI THI NÓI
+    // 2. LẤY DANH SÁCH BÀI THI NÓI (CÓ PHÂN TRANG / LIMIT)
+    const limitStr = searchParams.get("limit");
+    let limitNum = limitStr === "all" ? 0 : parseInt(limitStr || "50", 10);
+    if (isNaN(limitNum) || limitNum < 0) {
+      limitNum = 50;
+    }
+
     let resultsList = [];
+    let totalCount = 0;
+
     if (!isFallback) {
       try {
-        resultsList = await AssessmentResult.find().sort({ createdAt: -1 });
+        totalCount = await AssessmentResult.countDocuments();
+        if (limitNum > 0) {
+          resultsList = await AssessmentResult.find().sort({ createdAt: -1 }).limit(limitNum);
+        } else {
+          resultsList = await AssessmentResult.find().sort({ createdAt: -1 });
+        }
       } catch (dbError) {
         console.warn("⚠️ Trích xuất danh sách từ MongoDB lỗi, dùng bộ nhớ tạm.");
         resultsList = [...inMemoryAssessments];
+        totalCount = inMemoryAssessments.length;
+        if (limitNum > 0) {
+          resultsList = resultsList.slice(0, limitNum);
+        }
       }
     } else {
       resultsList = [...inMemoryAssessments];
+      totalCount = inMemoryAssessments.length;
+      if (limitNum > 0) {
+        resultsList = resultsList.slice(0, limitNum);
+      }
+    }
+
+    // 3. TÍNH TOÁN THỐNG KÊ LỊCH SỬ (Lifetime Stats) NẾU ĐƯỢC YÊU CẦU
+    let stats = null;
+    const computeStats = searchParams.get("stats") === "true";
+    if (computeStats) {
+      let statsData = [];
+      if (!isFallback) {
+        try {
+          statsData = await AssessmentResult.find({}, {
+            score: 1,
+            stars: 1,
+            skill: 1,
+            level: 1,
+            mispronouncedWords: 1
+          });
+        } catch (dbError) {
+          statsData = [...inMemoryAssessments];
+        }
+      } else {
+        statsData = [...inMemoryAssessments];
+      }
+
+      const totalAssessments = statsData.length;
+      const totalStars = statsData.reduce((sum, a) => sum + (a.stars || 0), 0);
+      const avgScore = totalAssessments > 0 ? Math.round(statsData.reduce((sum, a) => sum + (a.score || 0), 0) / totalAssessments) : 0;
+      const avgStars = totalAssessments > 0 ? (totalStars / totalAssessments).toFixed(1) : "0.0";
+
+      const skillStats: Record<string, { count: number; totalScore: number; totalStars: number }> = {
+        Speaking: { count: 0, totalScore: 0, totalStars: 0 },
+        Listening: { count: 0, totalScore: 0, totalStars: 0 },
+        Reading: { count: 0, totalScore: 0, totalStars: 0 },
+        Writing: { count: 0, totalScore: 0, totalStars: 0 }
+      };
+
+      statsData.forEach((a) => {
+        const s = a.skill || "Speaking";
+        if (skillStats[s]) {
+          skillStats[s].count += 1;
+          skillStats[s].totalScore += (a.score || 0);
+          skillStats[s].totalStars += (a.stars || 0);
+        }
+      });
+
+      const levelCounts: Record<string, number> = {};
+      statsData.forEach((a) => {
+        if (a.level) {
+          levelCounts[a.level] = (levelCounts[a.level] || 0) + 1;
+        }
+      });
+
+      const wordFrequency: Record<string, number> = {};
+      statsData.forEach((a) => {
+        if ((a.skill || "Speaking") === "Speaking" && Array.isArray(a.mispronouncedWords)) {
+          a.mispronouncedWords.forEach((word) => {
+            const w = word.toLowerCase().trim();
+            if (w) {
+              wordFrequency[w] = (wordFrequency[w] || 0) + 1;
+            }
+          });
+        }
+      });
+
+      const topWrongWords = Object.entries(wordFrequency)
+        .map(([word, count]) => ({ word, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      stats = {
+        totalAssessments,
+        totalStars,
+        avgScore,
+        avgStars,
+        skillStats,
+        levelCounts,
+        topWrongWords
+      };
     }
 
     return NextResponse.json({
       success: true,
-      count: resultsList.length,
+      count: totalCount,
       data: resultsList,
+      ...(stats ? { stats } : {})
     });
   } catch (error: any) {
     console.error("❌ Lỗi API GET assessments:", error);

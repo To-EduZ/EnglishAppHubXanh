@@ -51,12 +51,12 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const res = await fetch("/api/assessments");
+        const res = await fetch("/api/assessments?limit=20&stats=true");
         const json = await res.json();
         if (json.success && json.data) {
           setHistory(json.data);
-          // Calculate total stars collected across all tests
-          const starsSum = json.data.reduce((acc: number, item: AssessmentItem) => acc + item.stars, 0);
+          // Use totalStars from server-side stats, fallback to client calculation
+          const starsSum = json.stats ? json.stats.totalStars : json.data.reduce((acc: number, item: AssessmentItem) => acc + item.stars, 0);
           setTotalStars(starsSum);
         }
       } catch (error) {

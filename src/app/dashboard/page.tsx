@@ -33,6 +33,7 @@ interface WordFrequency {
 
 export default function DashboardPage() {
   const [assessments, setAssessments] = useState<AssessmentData[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,13 +77,16 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchAllData() {
       try {
-        const res = await fetch("/api/assessments");
+        const res = await fetch("/api/assessments?limit=50&stats=true");
         if (!res.ok) {
           throw new Error("Không thể tải lịch sử bài luyện tập!");
         }
         const json = await res.json();
         if (json.success && json.data) {
           setAssessments(json.data);
+          if (json.stats) {
+            setStats(json.stats);
+          }
         }
       } catch (err: any) {
         console.error("Lỗi tải dashboard:", err);
@@ -142,53 +146,62 @@ export default function DashboardPage() {
     );
   }
 
-  const totalAssessments = assessments.length;
-  const avgScore = Math.round(
-    assessments.reduce((sum, a) => sum + a.score, 0) / totalAssessments
+  // Calculate stats from stats state if provided (overall stats), otherwise fall back to local calculation
+  const totalAssessments = stats ? stats.totalAssessments : assessments.length;
+  const avgScore = stats ? stats.avgScore : (
+    assessments.length > 0 ? Math.round(assessments.reduce((sum, a) => sum + a.score, 0) / assessments.length) : 0
   );
-  const avgStars = (
-    assessments.reduce((sum, a) => sum + a.stars, 0) / totalAssessments
-  ).toFixed(1);
+  const avgStars = stats ? stats.avgStars : (
+    assessments.length > 0 ? (assessments.reduce((sum, a) => sum + a.stars, 0) / assessments.length).toFixed(1) : "0.0"
+  );
 
   // Compute skill breakdowns
-  const skillStats: Record<string, { count: number; totalScore: number; totalStars: number }> = {
-    Speaking: { count: 0, totalScore: 0, totalStars: 0 },
-    Listening: { count: 0, totalScore: 0, totalStars: 0 },
-    Reading: { count: 0, totalScore: 0, totalStars: 0 },
-    Writing: { count: 0, totalScore: 0, totalStars: 0 }
-  };
+  let skillStats = stats?.skillStats;
+  if (!skillStats) {
+    skillStats = {
+      Speaking: { count: 0, totalScore: 0, totalStars: 0 },
+      Listening: { count: 0, totalScore: 0, totalStars: 0 },
+      Reading: { count: 0, totalScore: 0, totalStars: 0 },
+      Writing: { count: 0, totalScore: 0, totalStars: 0 }
+    };
+    assessments.forEach((a) => {
+      const s = a.skill || "Speaking";
+      if (skillStats[s]) {
+        skillStats[s].count += 1;
+        skillStats[s].totalScore += a.score;
+        skillStats[s].totalStars += a.stars;
+      }
+    });
+  }
 
-  assessments.forEach((a) => {
-    const s = a.skill || "Speaking";
-    if (skillStats[s]) {
-      skillStats[s].count += 1;
-      skillStats[s].totalScore += a.score;
-      skillStats[s].totalStars += a.stars;
-    }
-  });
-
-  const levelCounts: Record<string, number> = {};
-  assessments.forEach((a) => {
-    levelCounts[a.level] = (levelCounts[a.level] || 0) + 1;
-  });
+  // Compute level counts
+  let levelCounts = stats?.levelCounts;
+  if (!levelCounts) {
+    levelCounts = {};
+    assessments.forEach((a) => {
+      levelCounts[a.level] = (levelCounts[a.level] || 0) + 1;
+    });
+  }
 
   // Calculate top wrong speaking words
-  const wordFrequency: Record<string, number> = {};
-  assessments.forEach((a) => {
-    if ((a.skill || "Speaking") === "Speaking") {
-      a.mispronouncedWords.forEach((word) => {
-        const w = word.toLowerCase().trim();
-        if (w) {
-          wordFrequency[w] = (wordFrequency[w] || 0) + 1;
-        }
-      });
-    }
-  });
-
-  const topWrongWords: WordFrequency[] = Object.entries(wordFrequency)
-    .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+  let topWrongWords = stats?.topWrongWords;
+  if (!topWrongWords) {
+    const wordFrequency: Record<string, number> = {};
+    assessments.forEach((a) => {
+      if ((a.skill || "Speaking") === "Speaking") {
+        a.mispronouncedWords.forEach((word) => {
+          const w = word.toLowerCase().trim();
+          if (w) {
+            wordFrequency[w] = (wordFrequency[w] || 0) + 1;
+          }
+        });
+      }
+    });
+    topWrongWords = Object.entries(wordFrequency)
+      .map(([word, count]) => ({ word, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }
 
   const levelColor: Record<string, string> = {
     Starters: "bg-pink-100 text-pink-700 border-pink-300",
