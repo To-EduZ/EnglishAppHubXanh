@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import Question from "@/models/Question";
 import { callGemini, safeJsonParse } from "@/lib/geminiClient";
 
+export const maxDuration = 60; // Set max timeout to 60 seconds
+
 const fallbackQuestions = [
   {
     id: "ST_P1_01",

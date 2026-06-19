@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
+
+export const maxDuration = 60; // Set max timeout to 60 seconds
 import AssessmentResult from "@/models/AssessmentResult";
 import { inMemoryAssessments } from "@/lib/dbStore";
 

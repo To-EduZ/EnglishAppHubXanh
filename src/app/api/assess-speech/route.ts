@@ -4,6 +4,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import AssessmentResult from "@/models/AssessmentResult";
 import { callGemini, safeJsonParse } from "@/lib/geminiClient";
 
+export const maxDuration = 60;
+
 // Groq client for Whisper STT only
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
